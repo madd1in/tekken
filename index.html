@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
-  <title>Iron Fist Arena - Beat Driven Edition</title>
+  <title>Iron Fist Arena - Auto Fullscreen Beat Edition</title>
   <style>
     :root {
       --p1: #31b8ff;
@@ -175,6 +175,13 @@
       box-shadow: 0 0 12px #ffd34d;
     }
 
+    #timerWrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
     #timer {
       min-width: 70px;
       text-align: center;
@@ -191,6 +198,14 @@
       color: #ff5b6b;
       border-color: rgba(255,91,107,.65);
       animation: pulse 0.8s infinite;
+    }
+
+    #modLabel {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: #7dffd4;
+      opacity: .88;
+      white-space: nowrap;
     }
 
     #message {
@@ -339,8 +354,8 @@
       position: absolute;
       left: max(14px, env(safe-area-inset-left));
       bottom: max(14px, env(safe-area-inset-bottom));
-      width: min(42vw, 38vh, 250px);
-      height: min(42vw, 38vh, 250px);
+      width: min(38vw, 34vh, 230px);
+      height: min(38vw, 34vh, 230px);
       pointer-events: auto;
       touch-action: none;
     }
@@ -375,20 +390,20 @@
       right: max(14px, env(safe-area-inset-right));
       bottom: max(14px, env(safe-area-inset-bottom));
       display: grid;
-      grid-template-columns: repeat(2, min(27vw, 23vh, 112px));
-      grid-auto-rows: min(27vw, 23vh, 112px);
+      grid-template-columns: repeat(2, min(28vw, 23vh, 120px));
+      grid-auto-rows: min(28vw, 23vh, 120px);
       gap: min(3.6vw, 18px);
       pointer-events: auto;
       touch-action: none;
     }
 
     .actionBtn {
-      border-radius: 50%;
+      border-radius: 26px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: min(9vw, 42px);
-      font-weight: 900;
+      gap: 6px;
       color: #fff;
       border: 4px solid rgba(255,255,255,.42);
       background: rgba(255,255,255,.14);
@@ -396,11 +411,24 @@
       text-shadow: 0 0 10px rgba(0,0,0,.5);
       user-select: none;
       -webkit-user-select: none;
+      line-height: 1;
     }
 
     .actionBtn:active {
       transform: scale(.94);
       background: rgba(255,255,255,.25);
+    }
+
+    .btnIcon {
+      font-size: clamp(34px, 10vw, 58px);
+      line-height: 1;
+    }
+
+    .btnLabel {
+      font-size: clamp(12px, 4vw, 18px);
+      font-weight: 900;
+      letter-spacing: 1px;
+      opacity: .95;
     }
 
     #btnSpecial {
@@ -568,6 +596,10 @@
       #beatBonus {
         font-size: 15px;
       }
+
+      #modLabel {
+        font-size: 8px;
+      }
     }
   </style>
 </head>
@@ -588,7 +620,10 @@
         <div class="rounds" id="p1rounds"><span></span><span></span></div>
       </div>
 
-      <div id="timer">60</div>
+      <div id="timerWrap">
+        <div id="timer">60</div>
+        <div id="modLabel">NORMAL</div>
+      </div>
 
       <div class="side right">
         <div class="name" id="p2name">CPU</div>
@@ -631,10 +666,25 @@
     </div>
 
     <div id="actionButtons">
-      <div class="actionBtn" id="btnSpecial">⚡</div>
-      <div class="actionBtn" id="btnBlock">🛡️</div>
-      <div class="actionBtn" id="btnPunch">🥊</div>
-      <div class="actionBtn" id="btnKick">🦶</div>
+      <div class="actionBtn" id="btnSpecial">
+        <span class="btnIcon">⚡</span>
+        <span class="btnLabel">SPECIAL</span>
+      </div>
+
+      <div class="actionBtn" id="btnBlock">
+        <span class="btnIcon">🛡️</span>
+        <span class="btnLabel">BLOCK</span>
+      </div>
+
+      <div class="actionBtn" id="btnPunch">
+        <span class="btnIcon">🥊</span>
+        <span class="btnLabel">PUNCH</span>
+      </div>
+
+      <div class="actionBtn" id="btnKick">
+        <span class="btnIcon">🦶</span>
+        <span class="btnLabel">KICK</span>
+      </div>
     </div>
   </div>
 
@@ -643,10 +693,10 @@
     <p>Wähle deinen Kämpfer</p>
     <div id="charCards" class="cards"></div>
     <div class="panel">
-      <strong>Beat-Gameplay</strong>: Angriffe und Blocks auf den Beat geben Boni<br>
+      <strong>Auto-Fullscreen</strong> startet nach dem Charakter-Klick (Browser-Regel: nur nach User-Geste)<br>
+      <strong>Beat-Gameplay</strong>: Angriffe / Blocks auf den Beat geben Boni<br>
       Desktop: WASD • J Schlag • K Tritt • L Blocken • R Special<br>
-      Mobile: großer linker Joystick • sehr große rechte Buttons<br>
-      Best of 3 Runden • Special-Leiste voll = R / ⚡
+      Mobile: linker Joystick • große rechte Buttons mit Beschriftung
     </div>
   </div>
 
@@ -743,9 +793,11 @@
     let sunLight = null;
     let noiseBuffer = null;
     let glowTexture = null;
+    let sfxMaster = null;
 
     const sparks = [];
     const rings = [];
+    const beams = [];
 
     const keys = {};
     const just = {};
@@ -772,6 +824,7 @@
       dust: true,
       stars: true,
       glowSprites: true,
+      beams: true,
       maxSparks: 160,
       maxRings: 26
     };
@@ -795,6 +848,8 @@
       beatBonusTimer: 0,
       beatBonusText: 'ON BEAT',
       musicOn: true,
+      musicIntensity: 0.15,
+      modifier: 'NORMAL',
       gyroEnabled: false,
       camTargetX: 0,
       camTargetY: 0,
@@ -811,6 +866,7 @@
     const p1NameEl = document.getElementById('p1name');
     const p2NameEl = document.getElementById('p2name');
     const timerEl = document.getElementById('timer');
+    const modLabelEl = document.getElementById('modLabel');
     const messageEl = document.getElementById('message');
     const combo1El = document.getElementById('combo1');
     const combo2El = document.getElementById('combo2');
@@ -1059,6 +1115,10 @@
         const rage = this.inRage ? 1.18 : 1.0;
         let damage = base.damage * this.damageScale * rage;
 
+        if (game.modifier === 'HEAVY') {
+          damage *= 1.15;
+        }
+
         let crit = false;
         let counter = false;
 
@@ -1099,13 +1159,17 @@
           spawnSpark(this.chestPos(), 0x66ccff, 8);
         }
 
-        if (Math.random() < 0.12) {
+        const critChance = game.modifier === 'CRIT UP' ? 0.20 : 0.12;
+
+        if (Math.random() < critChance) {
           crit = true;
           damage *= 1.30;
         }
 
+        const beatMul = game.modifier === 'BEAT POWER' ? 1.35 : 1.22;
+
         if (beatBoost) {
-          damage *= 1.22 * comboBonus;
+          damage *= beatMul * comboBonus;
         } else if (beatNear) {
           damage *= 1.08;
         }
@@ -1268,7 +1332,8 @@
         }
 
         if (move.lengthSq() > 0.001) {
-          move.normalize().multiplyScalar(this.speed * dt);
+          const speedMul = game.modifier === 'TURBO' ? 1.12 : 1.0;
+          move.normalize().multiplyScalar(this.speed * speedMul * dt);
           this.tryMove(move);
           this.setState('walk');
           this.walkPhase += dt * 9;
@@ -1786,6 +1851,7 @@
         quality.dust = false;
         quality.stars = false;
         quality.glowSprites = false;
+        quality.beams = false;
         quality.maxSparks = 50;
         quality.maxRings = 10;
       } else if (level === 1) {
@@ -1795,6 +1861,7 @@
         quality.dust = true;
         quality.stars = true;
         quality.glowSprites = true;
+        quality.beams = true;
         quality.maxSparks = 90;
         quality.maxRings = 18;
       } else {
@@ -1804,6 +1871,7 @@
         quality.dust = true;
         quality.stars = true;
         quality.glowSprites = true;
+        quality.beams = true;
         quality.maxSparks = 160;
         quality.maxRings = 26;
       }
@@ -1825,6 +1893,10 @@
       if (dust) {
         dust.visible = quality.dust;
       }
+
+      beams.forEach((b) => {
+        b.visible = quality.beams;
+      });
 
       [p1, p2].forEach((f) => {
         if (!f) return;
@@ -1886,7 +1958,7 @@
       blob(400, 160, 180, 'rgba(255,110,60,.10)');
       blob(260, 420, 220, 'rgba(0,220,255,.08)');
 
-      for (let i = 0; i < 220; i++) {
+      for (let i = 0; i < 240; i++) {
         ctx.fillStyle = `rgba(255,255,255,${0.03 + Math.random() * 0.12})`;
         ctx.fillRect(
           Math.random() * 512,
@@ -2099,6 +2171,28 @@
         scene.add(g);
       }
 
+      if (quality.beams) {
+        const beamGeo = new THREE.PlaneGeometry(2.2, 14);
+
+        for (let i = 0; i < 3; i++) {
+          const beamMat = new THREE.MeshBasicMaterial({
+            color: i === 1 ? 0xff9a3d : 0x37d5ff,
+            transparent: true,
+            opacity: 0.04,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide
+          });
+
+          const beam = new THREE.Mesh(beamGeo, beamMat);
+          beam.position.y = 4.5;
+          beam.rotation.y = i * 2.1;
+          beam.rotation.z = 0.55;
+          beams.push(beam);
+          scene.add(beam);
+        }
+      }
+
       const starCount = 500;
       const starPositions = new Float32Array(starCount * 3);
 
@@ -2199,6 +2293,10 @@
       renderer.domElement.addEventListener('pointerdown', () => {
         initAudio();
 
+        if (!document.fullscreenElement) {
+          tryFullscreen();
+        }
+
         if (game.state === 'matchEnd') {
           startMatch();
         }
@@ -2286,7 +2384,7 @@
           e.preventDefault();
           el.setPointerCapture(e.pointerId);
           virtualJust[action] = true;
-          vibrate(14);
+          vibrate(16);
         });
 
         el.addEventListener('pointerup', (e) => {
@@ -2339,7 +2437,7 @@
           const now = audioCtx.currentTime;
           music.gain.gain.cancelScheduledValues(now);
           music.gain.gain.setValueAtTime(music.gain.gain.value, now);
-          music.gain.gain.linearRampToValueAtTime(game.musicOn ? 0.18 : 0, now + 0.15);
+          music.gain.gain.linearRampToValueAtTime(game.musicOn ? 0.20 : 0, now + 0.15);
         }
       }
 
@@ -2400,7 +2498,24 @@
         if (document.fullscreenElement) {
           await document.exitFullscreen();
         } else {
-          await document.documentElement.requestFullscreen();
+          tryFullscreen();
+        }
+      } catch (err) {}
+    }
+
+    function tryFullscreen() {
+      try {
+        const el = document.documentElement;
+
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+          return;
+        }
+
+        if (el.requestFullscreen) {
+          const p = el.requestFullscreen();
+          if (p && p.catch) p.catch(() => {});
+        } else if (el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen();
         }
       } catch (err) {}
     }
@@ -2479,6 +2594,19 @@
         beatBonusEl.textContent = game.beatBonusText || 'ON BEAT';
       } else {
         beatBonusEl.style.opacity = '0';
+      }
+
+      if (p1 && p2 && (game.state === 'fighting' || game.state === 'roundEnd')) {
+        const minHp = Math.min(p1.health / p1.maxHealth, p2.health / p2.maxHealth);
+        game.musicIntensity = clamp((game.round - 1) * 0.25 + (1 - minHp) * 0.7, 0, 1);
+      } else if (game.state === 'intro') {
+        game.musicIntensity = 0.35;
+      } else {
+        game.musicIntensity = 0.15;
+      }
+
+      if (renderer) {
+        renderer.toneMappingExposure = 1.15 + game.beatPulse * 0.07;
       }
 
       if (game.state === 'select') {
@@ -2664,6 +2792,7 @@
     }
 
     function startFromOverlay(charId) {
+      tryFullscreen();
       initAudio();
       startBGM();
 
@@ -2683,10 +2812,25 @@
       startIntro();
     }
 
+    function chooseModifier() {
+      const pool = [
+        'BEAT POWER',
+        'BEAT POWER',
+        'TURBO',
+        'CRIT UP',
+        'HEAVY',
+        'NORMAL'
+      ];
+
+      game.modifier = pool[Math.floor(Math.random() * pool.length)];
+    }
+
     function resetRound() {
       game.timer = 60;
       game.beatBonusTimer = 0;
       game.beatBonusText = 'ON BEAT';
+
+      chooseModifier();
 
       const fighters = [p1, p2];
 
@@ -2728,7 +2872,7 @@
 
       showMessage(
         `RUNDE ${game.round}`,
-        `BEST OF 3 • ${game.wins[0]} : ${game.wins[1]}`,
+        `BEST OF 3 • ${game.wins[0]} : ${game.wins[1]} • MODUS: ${game.modifier}`,
         1.4
       );
     }
@@ -2835,6 +2979,8 @@
 
       timerEl.textContent = Math.ceil(Math.max(0, game.timer));
       timerEl.classList.toggle('danger', game.timer <= 10 && game.state === 'fighting');
+
+      modLabelEl.textContent = game.modifier || 'NORMAL';
 
       document.querySelectorAll('#p1rounds span').forEach((el, i) => {
         el.classList.toggle('win', game.wins[0] > i);
@@ -3033,6 +3179,12 @@
         dust.rotation.y += dt * 0.04;
       }
 
+      beams.forEach((b, index) => {
+        if (!b.visible) return;
+        b.rotation.y += dt * (0.10 + index * 0.035);
+        b.material.opacity = 0.03 + game.beatPulse * 0.045;
+      });
+
       if (ringMat) {
         ringMat.opacity =
           0.50 +
@@ -3069,13 +3221,23 @@
       if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume();
       }
+
+      if (audioCtx && !sfxMaster) {
+        sfxMaster = audioCtx.createGain();
+        sfxMaster.gain.value = 0.28;
+        sfxMaster.connect(audioCtx.destination);
+      }
+    }
+
+    function sfxOut() {
+      return sfxMaster || (audioCtx ? audioCtx.destination : null);
     }
 
     function startBGM() {
       if (!audioCtx || music.playing) return;
 
       music.gain = audioCtx.createGain();
-      music.gain.gain.value = game.musicOn ? 0.18 : 0;
+      music.gain.gain.value = game.musicOn ? 0.20 : 0;
       music.gain.connect(audioCtx.destination);
 
       music.playing = true;
@@ -3111,6 +3273,9 @@
         [0, 4, 7]
       ];
 
+      const intensity = game.musicIntensity || 0;
+      const arpFilter = 1500 + intensity * 1800;
+
       if (step % 4 === 0) {
         playMusicKick(time);
         playMusicTone(midiToFreq(root - 12), time, dur * 3.4, 'sine', 0.17, 300);
@@ -3128,13 +3293,26 @@
 
       if (step % 2 === 0) {
         const note = root + 12 + arpPattern[(step / 2) % arpPattern.length];
-        playMusicTone(midiToFreq(note), time, dur * 1.5, 'triangle', 0.032, 1800);
+        playMusicTone(midiToFreq(note), time, dur * 1.5, 'triangle', 0.032, arpFilter);
       }
 
       if (step % 16 === 0) {
         chordTypes[bar].forEach((off) => {
           playMusicTone(midiToFreq(root + 12 + off), time, dur * 14, 'sawtooth', 0.013, 800);
         });
+      }
+
+      if (intensity > 0.35 && step % 8 === 6) {
+        playMusicHat(time, 0.018);
+      }
+
+      if (intensity > 0.65 && step % 4 === 2) {
+        playMusicTone(midiToFreq(root), time, dur * 0.8, 'square', 0.028, 500 + intensity * 700);
+      }
+
+      if (intensity > 0.85 && step % 2 === 1) {
+        const note = root + 24 + arpPattern[(Math.floor(step / 2)) % arpPattern.length];
+        playMusicTone(midiToFreq(note), time, dur * 0.7, 'triangle', 0.018, 2600);
       }
     }
 
@@ -3252,6 +3430,8 @@
       if (!audioCtx) return;
 
       const now = audioCtx.currentTime;
+      const out = sfxOut();
+      if (!out) return;
 
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -3260,10 +3440,10 @@
       osc.frequency.setValueAtTime(type === 'kick' ? 170 : 250, now);
       osc.frequency.exponentialRampToValueAtTime(type === 'kick' ? 60 : 90, now + 0.09);
 
-      gain.gain.setValueAtTime(0.025, now);
+      gain.gain.setValueAtTime(0.04, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.10);
 
-      osc.connect(gain).connect(audioCtx.destination);
+      osc.connect(gain).connect(out);
       osc.start(now);
       osc.stop(now + 0.11);
     }
@@ -3272,6 +3452,9 @@
       if (!audioCtx) return;
 
       const now = audioCtx.currentTime;
+      const out = sfxOut();
+      if (!out) return;
+
       const len = 0.16;
 
       const buffer = audioCtx.createBuffer(
@@ -3291,14 +3474,14 @@
       src.buffer = buffer;
 
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(Math.min(0.26, 0.10 + power * 0.08), now);
+      gain.gain.setValueAtTime(Math.min(0.35, 0.16 + power * 0.10), now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + len);
 
       const filter = audioCtx.createBiquadFilter();
       filter.type = 'lowpass';
       filter.frequency.setValueAtTime(900 + power * 500, now);
 
-      src.connect(filter).connect(gain).connect(audioCtx.destination);
+      src.connect(filter).connect(gain).connect(out);
       src.start();
 
       const osc = audioCtx.createOscillator();
@@ -3308,10 +3491,10 @@
       osc.frequency.setValueAtTime(160 + power * 30, now);
       osc.frequency.exponentialRampToValueAtTime(45, now + 0.13);
 
-      oscGain.gain.setValueAtTime(0.12, now);
+      oscGain.gain.setValueAtTime(0.16, now);
       oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
 
-      osc.connect(oscGain).connect(audioCtx.destination);
+      osc.connect(oscGain).connect(out);
       osc.start(now);
       osc.stop(now + 0.15);
     }
@@ -3320,6 +3503,8 @@
       if (!audioCtx) return;
 
       const now = audioCtx.currentTime;
+      const out = sfxOut();
+      if (!out) return;
 
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -3328,10 +3513,10 @@
       osc.frequency.setValueAtTime(880, now);
       osc.frequency.exponentialRampToValueAtTime(320, now + 0.07);
 
-      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.setValueAtTime(0.10, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
 
-      osc.connect(gain).connect(audioCtx.destination);
+      osc.connect(gain).connect(out);
       osc.start(now);
       osc.stop(now + 0.09);
     }
@@ -3342,6 +3527,8 @@
       playHit(1.6);
 
       const now = audioCtx.currentTime;
+      const out = sfxOut();
+      if (!out) return;
 
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -3350,10 +3537,10 @@
       osc.frequency.setValueAtTime(120, now);
       osc.frequency.exponentialRampToValueAtTime(28, now + 0.65);
 
-      gain.gain.setValueAtTime(0.10, now);
+      gain.gain.setValueAtTime(0.15, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.70);
 
-      osc.connect(gain).connect(audioCtx.destination);
+      osc.connect(gain).connect(out);
       osc.start(now);
       osc.stop(now + 0.72);
     }
@@ -3362,6 +3549,8 @@
       if (!audioCtx) return;
 
       const now = audioCtx.currentTime;
+      const out = sfxOut();
+      if (!out) return;
 
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -3370,10 +3559,10 @@
       osc.frequency.setValueAtTime(120, now);
       osc.frequency.exponentialRampToValueAtTime(620, now + 0.18);
 
-      gain.gain.setValueAtTime(0.035, now);
+      gain.gain.setValueAtTime(0.07, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
 
-      osc.connect(gain).connect(audioCtx.destination);
+      osc.connect(gain).connect(out);
       osc.start(now);
       osc.stop(now + 0.24);
 
@@ -3384,10 +3573,10 @@
       osc2.frequency.setValueAtTime(60, now);
       osc2.frequency.exponentialRampToValueAtTime(180, now + 0.16);
 
-      gain2.gain.setValueAtTime(0.025, now);
+      gain2.gain.setValueAtTime(0.05, now);
       gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.20);
 
-      osc2.connect(gain2).connect(audioCtx.destination);
+      osc2.connect(gain2).connect(out);
       osc2.start(now);
       osc2.stop(now + 0.22);
     }
@@ -3396,6 +3585,8 @@
       if (!audioCtx) return;
 
       const now = audioCtx.currentTime;
+      const out = sfxOut();
+      if (!out) return;
 
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -3403,10 +3594,10 @@
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(1250, now);
 
-      gain.gain.setValueAtTime(0.02, now);
+      gain.gain.setValueAtTime(0.05, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
 
-      osc.connect(gain).connect(audioCtx.destination);
+      osc.connect(gain).connect(out);
       osc.start(now);
       osc.stop(now + 0.06);
     }
