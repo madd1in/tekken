@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
-  <title>Iron Fist Arena - Mobile + BGM + Gyro</title>
+  <title>Iron Fist Arena - Big Controls + FPS Boost</title>
   <style>
     :root {
       --p1: #31b8ff;
@@ -63,12 +63,12 @@
 
     #top {
       position: absolute;
-      top: max(12px, env(safe-area-inset-top));
+      top: max(10px, env(safe-area-inset-top));
       left: 50%;
       transform: translateX(-50%);
       display: flex;
       align-items: flex-start;
-      gap: 12px;
+      gap: 10px;
       width: min(96vw, 1200px);
     }
 
@@ -80,8 +80,8 @@
     .name {
       font-weight: 900;
       letter-spacing: 2px;
-      font-size: 14px;
-      margin-bottom: 6px;
+      font-size: 13px;
+      margin-bottom: 5px;
       text-shadow: 0 0 10px rgba(255,255,255,.35);
       white-space: nowrap;
       overflow: hidden;
@@ -93,7 +93,7 @@
     }
 
     .bar-wrap {
-      height: 26px;
+      height: 24px;
       border: 3px solid rgba(255,255,255,.55);
       background: rgba(0,0,0,.5);
       transform: skewX(-18deg);
@@ -125,7 +125,7 @@
       height: 9px;
       border: 2px solid rgba(255,255,255,.35);
       background: rgba(0,0,0,.5);
-      margin-top: 5px;
+      margin-top: 4px;
       transform: skewX(-18deg);
       overflow: hidden;
     }
@@ -151,9 +151,9 @@
     }
 
     .rounds {
-      margin-top: 7px;
+      margin-top: 6px;
       display: flex;
-      gap: 6px;
+      gap: 5px;
     }
 
     .right .rounds {
@@ -161,8 +161,8 @@
     }
 
     .rounds span {
-      width: 13px;
-      height: 13px;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
       border: 2px solid rgba(255,255,255,.7);
       background: transparent;
@@ -176,11 +176,11 @@
     }
 
     #timer {
-      min-width: 82px;
+      min-width: 70px;
       text-align: center;
-      font-size: 36px;
+      font-size: 30px;
       font-weight: 900;
-      padding: 6px 10px;
+      padding: 5px 8px;
       border: 3px solid rgba(255,255,255,.55);
       background: rgba(0,0,0,.5);
       transform: skewX(-8deg);
@@ -195,12 +195,12 @@
 
     #message {
       position: absolute;
-      top: 30%;
+      top: 28%;
       width: 100%;
       text-align: center;
-      font-size: clamp(42px, 8vw, 92px);
+      font-size: clamp(38px, 8vw, 92px);
       font-weight: 900;
-      letter-spacing: 6px;
+      letter-spacing: 5px;
       color: #fff;
       opacity: 0;
       transform: scale(1.25);
@@ -217,7 +217,7 @@
     }
 
     #message .sub {
-      font-size: clamp(14px, 2.5vw, 28px);
+      font-size: clamp(13px, 2.5vw, 28px);
       color: #ffd166;
       letter-spacing: 3px;
       margin-top: 10px;
@@ -226,8 +226,8 @@
 
     .combo {
       position: absolute;
-      top: 24%;
-      font-size: 34px;
+      top: 22%;
+      font-size: 32px;
       font-weight: 900;
       color: #ffcf4d;
       opacity: 0;
@@ -236,19 +236,19 @@
     }
 
     #combo1 {
-      left: 5%;
+      left: 4%;
     }
 
     #combo2 {
-      right: 5%;
+      right: 4%;
       text-align: right;
     }
 
     #controls {
       position: absolute;
-      left: 14px;
-      bottom: max(12px, env(safe-area-inset-bottom));
-      font-size: 13px;
+      left: 12px;
+      bottom: max(10px, env(safe-area-inset-bottom));
+      font-size: 12px;
       color: rgba(255,255,255,.72);
       background: rgba(0,0,0,.35);
       padding: 8px 10px;
@@ -258,8 +258,8 @@
 
     #sys {
       position: fixed;
-      top: calc(106px + env(safe-area-inset-top));
-      right: calc(10px + env(safe-area-inset-right));
+      top: calc(92px + env(safe-area-inset-top));
+      right: calc(8px + env(safe-area-inset-right));
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -267,8 +267,8 @@
     }
 
     .sysBtn {
-      width: 42px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
       border: 1px solid rgba(255,255,255,.28);
       background: rgba(0,0,0,.35);
@@ -306,8 +306,8 @@
       position: absolute;
       left: max(14px, env(safe-area-inset-left));
       bottom: max(14px, env(safe-area-inset-bottom));
-      width: min(42vw, 190px);
-      height: min(42vw, 190px);
+      width: min(46vw, 36vh, 240px);
+      height: min(46vw, 36vh, 240px);
       pointer-events: auto;
       touch-action: none;
     }
@@ -316,9 +316,9 @@
       position: absolute;
       inset: 0;
       border-radius: 50%;
-      border: 2px solid rgba(255,255,255,.28);
+      border: 3px solid rgba(255,255,255,.30);
       background:
-        radial-gradient(circle, rgba(255,255,255,.08), rgba(0,0,0,.18));
+        radial-gradient(circle, rgba(255,255,255,.09), rgba(0,0,0,.18));
       box-shadow: 0 0 24px rgba(0,0,0,.25);
     }
 
@@ -326,14 +326,14 @@
       position: absolute;
       left: 50%;
       top: 50%;
-      width: 34%;
-      height: 34%;
-      margin-left: -17%;
-      margin-top: -17%;
+      width: 38%;
+      height: 38%;
+      margin-left: -19%;
+      margin-top: -19%;
       border-radius: 50%;
       background:
-        radial-gradient(circle, rgba(255,255,255,.9), rgba(120,200,255,.5));
-      box-shadow: 0 0 18px rgba(120,220,255,.35);
+        radial-gradient(circle, rgba(255,255,255,.92), rgba(120,200,255,.52));
+      box-shadow: 0 0 20px rgba(120,220,255,.38);
       transform: translate(0, 0);
     }
 
@@ -342,9 +342,9 @@
       right: max(14px, env(safe-area-inset-right));
       bottom: max(14px, env(safe-area-inset-bottom));
       display: grid;
-      grid-template-columns: repeat(2, min(19vw, 78px));
-      grid-auto-rows: min(19vw, 78px);
-      gap: 10px;
+      grid-template-columns: repeat(2, min(23vw, 19vh, 96px));
+      grid-auto-rows: min(23vw, 19vh, 96px);
+      gap: min(3.2vw, 16px);
       pointer-events: auto;
       touch-action: none;
     }
@@ -354,11 +354,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 26px;
+      font-size: min(8vw, 36px);
       font-weight: 900;
       color: #fff;
-      border: 2px solid rgba(255,255,255,.35);
-      background: rgba(255,255,255,.12);
+      border: 3px solid rgba(255,255,255,.38);
+      background: rgba(255,255,255,.13);
       backdrop-filter: blur(4px);
       text-shadow: 0 0 10px rgba(0,0,0,.5);
       user-select: none;
@@ -371,13 +371,13 @@
     }
 
     #btnSpecial {
-      background: rgba(255,180,0,.22);
-      border-color: rgba(255,200,80,.55);
+      background: rgba(255,180,0,.24);
+      border-color: rgba(255,200,80,.58);
     }
 
     #btnBlock {
-      background: rgba(80,160,255,.2);
-      border-color: rgba(120,200,255,.55);
+      background: rgba(80,160,255,.22);
+      border-color: rgba(120,200,255,.58);
     }
 
     #overlay {
@@ -392,7 +392,7 @@
       cursor: default;
       pointer-events: auto;
       overflow: auto;
-      padding: 24px;
+      padding: 20px;
       touch-action: pan-y;
       background:
         radial-gradient(circle at 50% 20%, rgba(30,60,120,.9), rgba(0,0,0,.96));
@@ -400,9 +400,9 @@
     }
 
     #overlay h1 {
-      font-size: clamp(38px, 9vw, 100px);
+      font-size: clamp(36px, 9vw, 100px);
       margin: 0;
-      letter-spacing: 8px;
+      letter-spacing: 7px;
       background: linear-gradient(90deg, #67e8ff, #ffffff, #ffb454);
       -webkit-background-clip: text;
       background-clip: text;
@@ -411,33 +411,35 @@
     }
 
     #overlay p {
-      font-size: 20px;
+      font-size: 19px;
       color: #ffd166;
       letter-spacing: 3px;
       animation: pulse 1.2s infinite;
-      margin: 18px 0 10px;
+      margin: 16px 0 10px;
     }
 
     #overlay .panel {
-      margin-top: 22px;
-      padding: 16px 22px;
+      margin-top: 18px;
+      padding: 14px 18px;
       border: 1px solid rgba(255,255,255,.2);
       background: rgba(255,255,255,.06);
       border-radius: 14px;
-      line-height: 1.8;
+      line-height: 1.7;
+      font-size: 14px;
     }
 
     .cards {
       display: flex;
-      gap: 18px;
+      gap: 14px;
       flex-wrap: wrap;
       justify-content: center;
-      margin-top: 20px;
+      margin-top: 18px;
     }
 
     .card {
-      width: 220px;
-      padding: 16px;
+      width: min(44vw, 210px);
+      min-width: 145px;
+      padding: 13px;
       border: 1px solid rgba(255,255,255,.18);
       border-radius: 16px;
       background: rgba(255,255,255,.06);
@@ -454,27 +456,27 @@
     }
 
     .card .swatch {
-      height: 58px;
+      height: 52px;
       border-radius: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 9px;
       box-shadow: inset 0 0 18px rgba(255,255,255,.12);
     }
 
     .card h2 {
-      margin: 6px 0;
+      margin: 5px 0;
       letter-spacing: 2px;
-      font-size: 24px;
+      font-size: 20px;
     }
 
     .card p {
-      margin: 0 0 10px;
+      margin: 0 0 8px;
       color: #ffd166;
-      font-size: 13px;
+      font-size: 12px;
       animation: none;
     }
 
     .statline {
-      font-size: 12px;
+      font-size: 11px;
       color: rgba(255,255,255,.75);
       display: flex;
       justify-content: space-between;
@@ -486,7 +488,7 @@
       background: rgba(255,255,255,.15);
       border-radius: 4px;
       overflow: hidden;
-      margin: 4px 0 10px;
+      margin: 4px 0 8px;
     }
 
     .statfill {
@@ -505,7 +507,7 @@
       }
 
       .bar-wrap {
-        height: 18px;
+        height: 17px;
       }
 
       .special-wrap {
@@ -513,35 +515,21 @@
       }
 
       #timer {
-        font-size: 22px;
-        min-width: 58px;
+        font-size: 20px;
+        min-width: 54px;
       }
 
       #message {
-        top: 24%;
+        top: 23%;
         letter-spacing: 3px;
       }
 
       .combo {
-        font-size: 22px;
-      }
-
-      .card {
-        width: min(44vw, 190px);
-        min-width: 150px;
-        padding: 12px;
-      }
-
-      .card h2 {
-        font-size: 18px;
-      }
-
-      #overlay .panel {
-        font-size: 13px;
+        font-size: 21px;
       }
 
       #sys {
-        top: calc(88px + env(safe-area-inset-top));
+        top: calc(80px + env(safe-area-inset-top));
       }
     }
   </style>
@@ -613,9 +601,9 @@
     <p>Wähle deinen Kämpfer</p>
     <div id="charCards" class="cards"></div>
     <div class="panel">
-      <strong>Steuerung</strong><br>
+      <strong>Neu</strong>: Critical Hits, Counter nach Block, Rage-Aura, Perfect Round<br>
       Desktop: WASD • J Schlag • K Tritt • L Blocken • R Special<br>
-      Mobile: linker Joystick • rechte Buttons<br>
+      Mobile: großer linker Joystick • große rechte Buttons<br>
       Best of 3 Runden • Special-Leiste voll = R / ⚡
     </div>
   </div>
@@ -675,11 +663,7 @@
         health: 105,
         speed: 4.6,
         dmg: 1.0,
-        stats: {
-          speed: 85,
-          power: 70,
-          health: 70
-        }
+        stats: { speed: 85, power: 70, health: 70 }
       },
       {
         id: 'titan',
@@ -690,11 +674,7 @@
         health: 135,
         speed: 3.3,
         dmg: 1.28,
-        stats: {
-          speed: 45,
-          power: 95,
-          health: 95
-        }
+        stats: { speed: 45, power: 95, health: 95 }
       },
       {
         id: 'viper',
@@ -705,18 +685,17 @@
         health: 88,
         speed: 5.2,
         dmg: 0.88,
-        stats: {
-          speed: 98,
-          power: 55,
-          health: 45
-        }
+        stats: { speed: 98, power: 55, health: 45 }
       }
     ];
 
     let scene, camera, renderer;
     let p1, p2, ai;
+    let ringMesh = null;
     let ringMat = null;
+    let gridMat = null;
     let dust = null;
+    let sunLight = null;
     let noiseBuffer = null;
 
     const sparks = [];
@@ -725,20 +704,9 @@
     const keys = {};
     const just = {};
 
-    const touchInput = {
-      moveX: 0,
-      moveY: 0
-    };
-
-    const virtualState = {
-      block: false
-    };
-
-    const virtualJust = {
-      punch: false,
-      kick: false,
-      special: false
-    };
+    const touchInput = { moveX: 0, moveY: 0 };
+    const virtualState = { block: false };
+    const virtualJust = { punch: false, kick: false, special: false };
 
     const music = {
       playing: false,
@@ -747,6 +715,22 @@
       step: 0,
       nextTime: 0
     };
+
+    const quality = {
+      level: 2,
+      pixelRatio: 1.75,
+      shadows: true,
+      lights: true,
+      dust: true,
+      stars: true,
+      maxSparks: 160,
+      maxRings: 26
+    };
+
+    let initialQuality = 2;
+    let fpsFrames = 0;
+    let fpsTime = 0;
+    let lowFpsTime = 0;
 
     const game = {
       state: 'select',
@@ -758,6 +742,7 @@
       hitstop: 0,
       shake: 0,
       fovPunch: 0,
+      beatPulse: 0,
       musicOn: true,
       gyroEnabled: false,
       camTargetX: 0,
@@ -814,6 +799,7 @@
         this.accent = data.accent;
 
         this.special = 0;
+        this.counterTimer = 0;
 
         this.state = 'idle';
         this.stateTime = 0;
@@ -920,13 +906,42 @@
         this.legR.position.set(0.23, 0.98, 0);
         this.visual.add(this.legR);
 
-        this.glowLight = new THREE.PointLight(accent, 1.0, 8, 2);
-        this.glowLight.position.set(0, 1.4, 0);
-        this.root.add(this.glowLight);
+        const shadowBlob = new THREE.Mesh(
+          new THREE.CircleGeometry(0.55, 24),
+          new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            transparent: true,
+            opacity: 0.28
+          })
+        );
+        shadowBlob.rotation.x = -Math.PI / 2;
+        shadowBlob.position.y = 0.02;
+        this.root.add(shadowBlob);
+
+        this.auraMat = new THREE.MeshBasicMaterial({
+          color: accent,
+          transparent: true,
+          opacity: 0,
+          side: THREE.DoubleSide
+        });
+
+        this.aura = new THREE.Mesh(
+          new THREE.RingGeometry(0.52, 0.66, 32),
+          this.auraMat
+        );
+        this.aura.rotation.x = -Math.PI / 2;
+        this.aura.position.y = 0.03;
+        this.root.add(this.aura);
+
+        if (quality.lights) {
+          this.glowLight = new THREE.PointLight(accent, 1.0, 8, 2);
+          this.glowLight.position.set(0, 1.4, 0);
+          this.root.add(this.glowLight);
+        }
 
         this.root.traverse((obj) => {
           if (obj.isMesh) {
-            obj.castShadow = true;
+            obj.castShadow = quality.shadows;
           }
         });
 
@@ -972,14 +987,37 @@
         const base = ATTACKS[type];
 
         const rage = this.inRage ? 1.18 : 1.0;
-        const damage = Math.max(1, Math.round(base.damage * this.damageScale * rage));
-        const chip = Math.max(1, Math.round(base.chip * this.damageScale * rage));
+        let damage = base.damage * this.damageScale * rage;
+
+        let crit = false;
+        let counter = false;
+
+        if (this.counterTimer > 0) {
+          counter = true;
+          damage *= 1.35;
+          this.counterTimer = 0;
+          spawnSpark(this.chestPos(), 0x66ccff, 8);
+        }
+
+        if (Math.random() < 0.12) {
+          crit = true;
+          damage *= 1.30;
+        }
+
+        damage = Math.max(1, Math.round(damage));
+
+        const chip = Math.max(
+          1,
+          Math.round(base.chip * this.damageScale * rage)
+        );
 
         this.attack = {
           type,
           time: 0,
           hasHit: false,
           isActive: false,
+          crit,
+          counter,
           ...base,
           damage,
           chip,
@@ -1001,6 +1039,10 @@
       update(dt, input, opponent) {
         this.stateTime += dt;
         this.animTime += dt;
+
+        if (this.counterTimer > 0) {
+          this.counterTimer -= dt;
+        }
 
         if (this.comboTimer > 0) {
           this.comboTimer -= dt;
@@ -1027,6 +1069,10 @@
         if (this.state === 'ko') {
           this.updateKO(dt);
           return;
+        }
+
+        if (this.inRage && Math.random() < dt * 5) {
+          spawnSpark(this.chestPos(), 0xff4444, 1);
         }
 
         if (this.state === 'hitstun') {
@@ -1154,6 +1200,8 @@
           this.health = Math.max(0, this.health - attack.chip);
           this.setState('blockstun');
           this.blockstun = attack.blockstun;
+          this.counterTimer = 0.45;
+
           this.pos.addScaledVector(attacker.forward, attack.knockback * 0.55);
           this.clampArena();
 
@@ -1186,6 +1234,16 @@
 
           spawnSpark(impact, 0xffaa33, attack.type === 'special' ? 28 : 20);
           playHit(attack.damage / 12);
+
+          if (attack.crit) {
+            spawnSpark(impact, 0xffd700, 18);
+            screenFlash('#ffd700', 0.09);
+            game.shake += 0.45;
+          }
+
+          if (attack.counter) {
+            screenFlash('#66ccff', 0.07);
+          }
 
           if (attack.type === 'special') {
             spawnRing(this.pos, attacker.accent, 5.0);
@@ -1370,6 +1428,20 @@
           this.glowLight.intensity +=
             (targetLight - this.glowLight.intensity) * k;
         }
+
+        if (this.auraMat) {
+          let targetAura = 0;
+
+          if (this.special >= 100) {
+            targetAura = 0.34 + Math.sin(t * 7) * 0.12;
+            this.auraMat.color.setHex(this.accent);
+          } else if (this.inRage) {
+            targetAura = 0.16 + Math.sin(t * 10) * 0.05;
+            this.auraMat.color.setHex(0xff3344);
+          }
+
+          this.auraMat.opacity += (targetAura - this.auraMat.opacity) * k;
+        }
       }
     }
 
@@ -1494,6 +1566,12 @@
     }
 
     function init() {
+      const isCoarse =
+        window.matchMedia &&
+        window.matchMedia('(pointer: coarse)').matches;
+
+      initialQuality = isCoarse ? 1 : 2;
+
       scene = new THREE.Scene();
       scene.background = makeBackgroundTexture();
       scene.fog = new THREE.Fog(0x03060c, 16, 55);
@@ -1506,20 +1584,23 @@
       );
       camera.position.set(0, 3, 8);
 
-      const isCoarse = window.matchMedia('(pointer: coarse)').matches;
-
       renderer = new THREE.WebGLRenderer({
         antialias: !isCoarse,
         powerPreference: 'high-performance'
       });
 
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, isCoarse ? 1.75 : 2));
-      renderer.shadowMap.enabled = true;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.12;
+      renderer.shadowMap.enabled = quality.shadows;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
       document.body.appendChild(renderer.domElement);
 
-      buildLights(isCoarse);
+      setQuality(initialQuality);
+
+      buildLights();
       buildArena();
 
       renderCharCards();
@@ -1528,8 +1609,64 @@
       setupTouchControls();
       setupMiscListeners();
 
+      setQuality(quality.level);
+
       updateUI();
       updateSysButtons();
+    }
+
+    function setQuality(level) {
+      quality.level = level;
+
+      if (level <= 0) {
+        quality.pixelRatio = 0.9;
+        quality.shadows = false;
+        quality.lights = false;
+        quality.dust = false;
+        quality.stars = false;
+        quality.maxSparks = 50;
+        quality.maxRings = 10;
+      } else if (level === 1) {
+        quality.pixelRatio = 1.25;
+        quality.shadows = false;
+        quality.lights = false;
+        quality.dust = true;
+        quality.stars = true;
+        quality.maxSparks = 90;
+        quality.maxRings = 18;
+      } else {
+        quality.pixelRatio = 1.75;
+        quality.shadows = true;
+        quality.lights = true;
+        quality.dust = true;
+        quality.stars = true;
+        quality.maxSparks = 160;
+        quality.maxRings = 26;
+      }
+
+      if (renderer) {
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality.pixelRatio));
+        renderer.shadowMap.enabled = quality.shadows;
+      }
+
+      if (sunLight) {
+        sunLight.castShadow = quality.shadows;
+      }
+
+      if (scene) {
+        const stars = scene.getObjectByName('stars');
+        if (stars) stars.visible = quality.stars;
+      }
+
+      if (dust) {
+        dust.visible = quality.dust;
+      }
+
+      [p1, p2].forEach((f) => {
+        if (f && f.glowLight) {
+          f.glowLight.visible = quality.lights;
+        }
+      });
     }
 
     function makeBackgroundTexture() {
@@ -1623,20 +1760,24 @@
       });
     }
 
-    function buildLights(isCoarse) {
+    function buildLights() {
       const hemi = new THREE.HemisphereLight(0x7db8ff, 0x05070c, 0.95);
       scene.add(hemi);
 
-      const sun = new THREE.DirectionalLight(0xffffff, 1.6);
-      sun.position.set(8, 14, 6);
-      sun.castShadow = true;
-      sun.shadow.mapSize.set(isCoarse ? 1024 : 2048, isCoarse ? 1024 : 2048);
-      sun.shadow.camera.left = -14;
-      sun.shadow.camera.right = 14;
-      sun.shadow.camera.top = 14;
-      sun.shadow.camera.bottom = -14;
-      sun.shadow.camera.updateProjectionMatrix();
-      scene.add(sun);
+      sunLight = new THREE.DirectionalLight(0xffffff, 1.6);
+      sunLight.position.set(8, 14, 6);
+      sunLight.castShadow = quality.shadows;
+
+      if (quality.shadows) {
+        sunLight.shadow.mapSize.set(2048, 2048);
+        sunLight.shadow.camera.left = -14;
+        sunLight.shadow.camera.right = 14;
+        sunLight.shadow.camera.top = 14;
+        sunLight.shadow.camera.bottom = -14;
+        sunLight.shadow.camera.updateProjectionMatrix();
+      }
+
+      scene.add(sunLight);
 
       const rim = new THREE.DirectionalLight(0x66aaff, 0.65);
       rim.position.set(-8, 6, -8);
@@ -1659,13 +1800,14 @@
         floorMat
       );
       floor.position.y = -0.3;
-      floor.receiveShadow = true;
+      floor.receiveShadow = quality.shadows;
       scene.add(floor);
 
       const grid = new THREE.GridHelper(ARENA_RADIUS * 2 + 2, 26, 0x2b6ca8, 0x132030);
       grid.position.y = 0.015;
       grid.material.transparent = true;
-      grid.material.opacity = 0.28;
+      grid.material.opacity = 0.24;
+      gridMat = grid.material;
       scene.add(grid);
 
       ringMat = new THREE.MeshBasicMaterial({
@@ -1674,13 +1816,13 @@
         opacity: 0.8
       });
 
-      const ring = new THREE.Mesh(
+      ringMesh = new THREE.Mesh(
         new THREE.TorusGeometry(ARENA_RADIUS + 0.2, 0.07, 16, 96),
         ringMat
       );
-      ring.rotation.x = Math.PI / 2;
-      ring.position.y = 0.03;
-      scene.add(ring);
+      ringMesh.rotation.x = Math.PI / 2;
+      ringMesh.position.y = 0.03;
+      scene.add(ringMesh);
 
       const inner = new THREE.Mesh(
         new THREE.RingGeometry(1.3, 1.55, 48),
@@ -1716,7 +1858,7 @@
           })
         );
         pillar.position.y = 3.25;
-        pillar.castShadow = true;
+        pillar.castShadow = quality.shadows;
         g.add(pillar);
 
         const strip = new THREE.Mesh(
@@ -1758,6 +1900,7 @@
       );
 
       stars.name = 'stars';
+      stars.visible = quality.stars;
       scene.add(stars);
 
       const dustCount = 130;
@@ -1784,6 +1927,7 @@
         })
       );
 
+      dust.visible = quality.dust;
       scene.add(dust);
     }
 
@@ -1856,7 +2000,7 @@
 
       function updateStick(e) {
         const rect = stickAreaEl.getBoundingClientRect();
-        const max = rect.width * 0.30;
+        const max = rect.width * 0.31;
 
         let dx = e.clientX - stickOriginX;
         let dy = e.clientY - stickOriginY;
@@ -1969,7 +2113,7 @@
           const now = audioCtx.currentTime;
           music.gain.gain.cancelScheduledValues(now);
           music.gain.gain.setValueAtTime(music.gain.gain.value, now);
-          music.gain.gain.linearRampToValueAtTime(game.musicOn ? 0.13 : 0, now + 0.15);
+          music.gain.gain.linearRampToValueAtTime(game.musicOn ? 0.16 : 0, now + 0.15);
         }
       }
 
@@ -2047,6 +2191,27 @@
       const dtRaw = Math.min(0.033, (now - lastTime) / 1000);
       lastTime = now;
 
+      fpsFrames++;
+      fpsTime += dtRaw;
+
+      if (fpsTime >= 1) {
+        const fps = fpsFrames / fpsTime;
+
+        if (fps < 45) {
+          lowFpsTime++;
+
+          if (lowFpsTime >= 2 && quality.level > 0) {
+            setQuality(quality.level - 1);
+            lowFpsTime = 0;
+          }
+        } else {
+          lowFpsTime = 0;
+        }
+
+        fpsFrames = 0;
+        fpsTime = 0;
+      }
+
       let dt = dtRaw;
 
       if (game.hitstop > 0) {
@@ -2069,6 +2234,7 @@
     function update(dt, rawDt) {
       game.time += rawDt;
       game.shake = Math.max(0, game.shake - rawDt * 5);
+      game.beatPulse *= Math.exp(-6 * rawDt);
 
       if (game.state === 'select') {
         p1.update(dt, emptyInput(), p2);
@@ -2253,6 +2419,7 @@
       fighters.forEach((f, index) => {
         f.health = f.maxHealth;
         f.special = 0;
+        f.counterTimer = 0;
 
         f.state = 'idle';
         f.stateTime = 0;
@@ -2316,9 +2483,23 @@
       }
 
       const main = (p1.health <= 0 || p2.health <= 0) ? 'K.O.!' : 'ZEIT!';
+
+      const winnerFighter =
+        winner === 0 ? p1 :
+        winner === 1 ? p2 :
+        null;
+
+      const perfect =
+        winnerFighter &&
+        winnerFighter.health >= winnerFighter.maxHealth;
+
       const sub = winner === -1
         ? 'UNENTSCHIEDEN'
-        : `${winner === 0 ? p1.name : p2.name} GEWINNT DIE RUNDE`;
+        : `${perfect ? 'PERFEKT! ' : ''}${winnerFighter.name} GEWINNT DIE RUNDE`;
+
+      if (perfect) {
+        screenFlash('#ffd700', 0.12);
+      }
 
       showMessage(main, sub, 2.4);
     }
@@ -2500,7 +2681,7 @@
         scene.add(mesh);
       }
 
-      if (sparks.length > 180) {
+      while (sparks.length > quality.maxSparks) {
         const old = sparks.shift();
         scene.remove(old.mesh);
       }
@@ -2528,6 +2709,11 @@
       });
 
       scene.add(mesh);
+
+      while (rings.length > quality.maxRings) {
+        const old = rings.shift();
+        scene.remove(old.mesh);
+      }
     }
 
     function updateEffects(dt) {
@@ -2564,16 +2750,28 @@
       }
 
       const stars = scene.getObjectByName('stars');
-      if (stars) {
+      if (stars && stars.visible) {
         stars.rotation.y += dt * 0.02;
       }
 
-      if (dust) {
+      if (dust && dust.visible) {
         dust.rotation.y += dt * 0.04;
       }
 
       if (ringMat) {
-        ringMat.opacity = 0.55 + Math.sin(game.time * 2.4) * 0.2;
+        ringMat.opacity =
+          0.50 +
+          game.beatPulse * 0.35 +
+          Math.sin(game.time * 2.4) * 0.08;
+      }
+
+      if (ringMesh) {
+        const s = 1 + game.beatPulse * 0.02;
+        ringMesh.scale.setScalar(s);
+      }
+
+      if (gridMat) {
+        gridMat.opacity = 0.18 + game.beatPulse * 0.14;
       }
     }
 
@@ -2594,14 +2792,14 @@
       if (!audioCtx || music.playing) return;
 
       music.gain = audioCtx.createGain();
-      music.gain.gain.value = game.musicOn ? 0.13 : 0;
+      music.gain.gain.value = game.musicOn ? 0.16 : 0;
       music.gain.connect(audioCtx.destination);
 
       music.playing = true;
       music.step = 0;
       music.nextTime = audioCtx.currentTime + 0.1;
 
-      music.timer = setInterval(scheduleMusic, 100);
+      music.timer = setInterval(scheduleMusic, 80);
 
       updateSysButtons();
     }
@@ -2611,7 +2809,7 @@
 
       const stepDur = 60 / 104 / 4;
 
-      while (music.nextTime < audioCtx.currentTime + 0.35) {
+      while (music.nextTime < audioCtx.currentTime + 0.15) {
         playMusicStep(music.step, music.nextTime, stepDur);
         music.step = (music.step + 1) % 64;
         music.nextTime += stepDur;
@@ -2622,13 +2820,20 @@
       const bar = Math.floor(step / 16) % 4;
       const roots = [45, 41, 48, 43]; // A F C G
       const root = roots[bar];
-
-      if (step % 8 === 0) {
-        playMusicKick(time);
-      }
+      const chordTypes = [
+        [0, 3, 7],
+        [0, 4, 7],
+        [0, 4, 7],
+        [0, 4, 7]
+      ];
 
       if (step % 4 === 0) {
-        playMusicTone(midiToFreq(root - 12), time, dur * 3.6, 'sine', 0.16, 300);
+        playMusicKick(time);
+        playMusicTone(midiToFreq(root - 12), time, dur * 3.4, 'sine', 0.17, 300);
+      }
+
+      if (step % 16 === 4 || step % 16 === 12) {
+        playMusicSnare(time);
       }
 
       if (step % 4 === 2) {
@@ -2642,8 +2847,10 @@
         playMusicTone(midiToFreq(note), time, dur * 1.5, 'triangle', 0.035, 1800);
       }
 
-      if (step === 0 || step === 32) {
-        playMusicTone(midiToFreq(root + 12), time, dur * 12, 'sawtooth', 0.02, 700);
+      if (step % 16 === 0) {
+        chordTypes[bar].forEach((off) => {
+          playMusicTone(midiToFreq(root + 12 + off), time, dur * 14, 'sawtooth', 0.014, 800);
+        });
       }
     }
 
@@ -2675,18 +2882,54 @@
     function playMusicKick(time) {
       if (!audioCtx || !music.gain) return;
 
+      game.beatPulse = Math.min(1, game.beatPulse + 0.55);
+
       const osc = audioCtx.createOscillator();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(130, time);
       osc.frequency.exponentialRampToValueAtTime(40, time + 0.12);
 
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(0.10, time);
+      gain.gain.setValueAtTime(0.12, time);
       gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.13);
 
       osc.connect(gain).connect(music.gain);
       osc.start(time);
       osc.stop(time + 0.15);
+    }
+
+    function playMusicSnare(time) {
+      if (!audioCtx || !music.gain) return;
+
+      const src = audioCtx.createBufferSource();
+      src.buffer = getNoiseBuffer();
+
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.06, time);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.09);
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 1800;
+      filter.Q.value = 0.8;
+
+      src.connect(filter).connect(gain).connect(music.gain);
+      src.start(time);
+      src.stop(time + 0.10);
+
+      const osc = audioCtx.createOscillator();
+      const oscGain = audioCtx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(190, time);
+      osc.frequency.exponentialRampToValueAtTime(120, time + 0.06);
+
+      oscGain.gain.setValueAtTime(0.035, time);
+      oscGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.07);
+
+      osc.connect(oscGain).connect(music.gain);
+      osc.start(time);
+      osc.stop(time + 0.08);
     }
 
     function playMusicHat(time, gainVal) {
