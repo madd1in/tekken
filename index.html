@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iron Fist Arena - 3D Fighting Prototype</title>
+  <style>
+    :root {
+      --p1: #31b8ff;
+      --p2: #ff4d4d;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #ui {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      color: #fff;
+      z-index: 5;
+      user-select: none;
+    }
+
+    #top {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+      width: min(96vw, 1200px);
+    }
+
+    .side {
+      flex: 1;
+    }
+
+    .name {
+      font-weight: 900;
+      letter-spacing: 2px;
+      font-size: 14px;
+      margin-bottom: 6px;
+      text-shadow: 0 0 10px rgba(255,255,255,.35);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .right {
+      text-align: right;
+    }
+
+    .bar-wrap {
+      height: 26px;
+      border: 3px solid rgba(255,255,255,.55);
+      background: rgba(0,0,0,.5);
+      transform: skewX(-18deg);
+      overflow: hidden;
+      box-shadow: 0 0 18px rgba(0,0,0,.45);
+    }
+
+    .right .bar-wrap {
+      transform: skewX(18deg);
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 100%;
+      transform-origin: left center;
+      transition: transform .12s linear;
+    }
+
+    #p1health {
+      background: linear-gradient(90deg, #0e5cff, #8ff3ff);
+    }
+
+    #p2health {
+      background: linear-gradient(90deg, #ff913d, #ff2d55);
+      transform-origin: right center;
+    }
+
+    .rounds {
+      margin-top: 7px;
+      display: flex;
+      gap: 6px;
+    }
+
+    .right .rounds {
+      justify-content: flex-end;
+    }
+
+    .rounds span {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.7);
+      background: transparent;
+      box-shadow: 0 0 8px rgba(255,255,255,.12);
+    }
+
+    .rounds span.win {
+      background: #ffd34d;
+      border-color: #ffd34d;
+      box-shadow: 0 0 12px #ffd34d;
+    }
+
+    #timer {
+      min-width: 82px;
+      text-align: center;
+      font-size: 36px;
+      font-weight: 900;
+      padding: 6px 10px;
+      border: 3px solid rgba(255,255,255,.55);
+      background: rgba(0,0,0,.5);
+      transform: skewX(-8deg);
+      text-shadow: 0 0 14px rgba(255,255,255,.28);
+    }
+
+    #message {
+      position: absolute;
+      top: 30%;
+      width: 100%;
+      text-align: center;
+      font-size: clamp(42px, 8vw, 92px);
+      font-weight: 900;
+      letter-spacing: 6px;
+      color: #fff;
+      opacity: 0;
+      transform: scale(1.25);
+      transition: opacity .16s, transform .16s;
+      text-shadow:
+        0 0 28px rgba(255,170,0,.55),
+        0 4px 0 rgba(0,0,0,.35);
+    }
+
+    #message.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    #message .sub {
+      font-size: clamp(16px, 2.5vw, 28px);
+      color: #ffd166;
+      letter-spacing: 3px;
+      margin-top: 10px;
+      text-transform: uppercase;
+    }
+
+    .combo {
+      position: absolute;
+      top: 24%;
+      font-size: 34px;
+      font-weight: 900;
+      color: #ffcf4d;
+      opacity: 0;
+      transition: opacity .12s;
+      text-shadow: 0 0 18px rgba(255,180,0,.5);
+    }
+
+    #combo1 {
+      left: 5%;
+    }
+
+    #combo2 {
+      right: 5%;
+      text-align: right;
+    }
+
+    #controls {
+      position: absolute;
+      left: 14px;
+      bottom: 12px;
+      font-size: 13px;
+      color: rgba(255,255,255,.72);
+      background: rgba(0,0,0,.35);
+      padding: 8px 10px;
+      border-radius: 8px;
+      line-height: 1.6;
+    }
+
+    #overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      pointer-events: auto;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(30,60,120,.9), rgba(0,0,0,.96));
+      color: #fff;
+    }
+
+    #overlay h1 {
+      font-size: clamp(42px, 9vw, 110px);
+      margin: 0;
+      letter-spacing: 8px;
+      background: linear-gradient(90deg, #67e8ff, #ffffff, #ffb454);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 0 22px rgba(120,220,255,.25));
+    }
+
+    #overlay p {
+      font-size: 20px;
+      color: #ffd166;
+      letter-spacing: 3px;
+      animation: pulse 1.2s infinite;
+    }
+
+    #overlay .panel {
+      margin-top: 22px;
+      padding: 16px 22px;
+      border: 1px solid rgba(255,255,255,.2);
+      background: rgba(255,255,255,.06);
+      border-radius: 14px;
+      line-height: 1.8;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: .55; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div id="top">
+      <div class="side left">
+        <div class="name" id="p1name">PLAYER</div>
+        <div class="bar-wrap">
+          <div id="p1health" class="bar-fill"></div>
+        </div>
+        <div class="rounds" id="p1rounds"><span></span><span></span></div>
+      </div>
+
+      <div id="timer">60</div>
+
+      <div class="side right">
+        <div class="name" id="p2name">CPU</div>
+        <div class="bar-wrap">
+          <div id="p2health" class="bar-fill"></div>
+        </div>
+        <div class="rounds" id="p2rounds"><span></span><span></span></div>
+      </div>
+    </div>
+
+    <div id="message"></div>
+    <div id="combo1" class="combo"></div>
+    <div id="combo2" class="combo"></div>
+
+    <div id="controls">
+      WASD: Bewegen / Sidestep • J: Schlag • K: Tritt • L: Blocken<br>
+      ENTER: Rematch nach Matchende • Sidesteps können Angriffe ins Leere laufen lassen
+    </div>
+  </div>
+
+  <div id="overlay">
+    <h1>IRON FIST ARENA</h1>
+    <p>Klicke zum Starten</p>
+    <div class="panel">
+      <strong>Steuerung</strong><br>
+      W / S: Vorwärts / Rückwärts<br>
+      A / D: Sidestep links / rechts<br>
+      J: Schlag • K: Tritt • L: Blocken<br>
+      Best of 3 Runden
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+    const ARENA_RADIUS = 7;
+    const SPEED = 4.1;
+    const UP = new THREE.Vector3(0, 1, 0);
+
+    const ATTACKS = {
+      punch: {
+        startup: 0.11,
+        active: 0.09,
+        recovery: 0.16,
+        damage: 7,
+        chip: 1,
+        range: 1.9,
+        lateral: 0.8,
+        hitstun: 0.28,
+        blockstun: 0.14,
+        knockback: 0.35
+      },
+      kick: {
+        startup: 0.22,
+        active: 0.11,
+        recovery: 0.28,
+        damage: 13,
+        chip: 2,
+        range: 2.25,
+        lateral: 0.85,
+        hitstun: 0.42,
+        blockstun: 0.20,
+        knockback: 0.65
+      }
+    };
+
+    let scene, camera, renderer;
+    let p1, p2, ai;
+    const sparks = [];
+
+    const keys = {};
+    const just = {};
+
+    const game = {
+      state: 'menu',
+      round: 1,
+      wins: [0, 0],
+      timer: 60,
+      stateTimer: 0,
+      time: 0,
+      hitstop: 0,
+      shake: 0
+    };
+
+    const camSide = new THREE.Vector3(0, 0, 1);
+
+    const p1HealthEl = document.getElementById('p1health');
+    const p2HealthEl = document.getElementById('p2health');
+    const p1NameEl = document.getElementById('p1name');
+    const p2NameEl = document.getElementById('p2name');
+    const timerEl = document.getElementById('timer');
+    const messageEl = document.getElementById('message');
+    const combo1El = document.getElementById('combo1');
+    const combo2El = document.getElementById('combo2');
+    const overlayEl = document.getElementById('overlay');
+
+    let messageTimeout = null;
+    let audioCtx = null;
+
+    init();
+    requestAnimationFrame(loop);
+
+    function init() {
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x03060c);
+      scene.fog = new THREE.Fog(0x03060c, 16, 55);
+
+      camera = new THREE.PerspectiveCamera(
+        50,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        100
+      );
+      camera.position.set(0, 3, 8);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.body.appendChild(renderer.domElement);
+
+      buildLights();
+      buildArena();
+
+      p1 = new Fighter(
+        'BLAUER KÄMPFER',
+        0x2266ff,
+        0x77ddff,
+        new THREE.Vector3(-2.2, 0, 0),
+        true
+      );
+
+      p2 = new Fighter(
+        'ROTER GEGNER',
+        0xff2233,
+        0xffaa55,
+        new THREE.Vector3(2.2, 0, 0),
+        false
+      );
+
+      p1NameEl.textContent = p1.name;
+      p2NameEl.textContent = p2.name;
+
+      ai = new AI(p2, p1);
+
+      window.addEventListener('resize', onResize);
+
+      window.addEventListener('keydown', (e) => {
+        if (e.repeat) return;
+        keys[e.code] = true;
+        just[e.code] = true;
+
+        if ([
+          'KeyW', 'KeyA', 'KeyS', 'KeyD',
+          'KeyJ', 'KeyK', 'KeyL',
+          'Space', 'Enter'
+        ].includes(e.code)) {
+          e.preventDefault();
+        }
+      });
+
+      window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+      });
+
+      overlayEl.addEventListener('click', startFromOverlay);
+
+      updateUI();
+    }
+
+    function buildLights() {
+      const hemi = new THREE.HemisphereLight(0x7db8ff, 0x05070c, 0.9);
+      scene.add(hemi);
+
+      const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+      sun.position.set(8, 14, 6);
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(2048, 2048);
+      sun.shadow.camera.left = -14;
+      sun.shadow.camera.right = 14;
+      sun.shadow.camera.top = 14;
+      sun.shadow.camera.bottom = -14;
+      sun.shadow.camera.updateProjectionMatrix();
+      scene.add(sun);
+
+      const rim = new THREE.DirectionalLight(0x66aaff, 0.55);
+      rim.position.set(-8, 6, -8);
+      scene.add(rim);
+    }
+
+    function buildArena() {
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x0d1118,
+        roughness: 0.32,
+        metalness: 0.75
+      });
+
+      const floor = new THREE.Mesh(
+        new THREE.CylinderGeometry(ARENA_RADIUS + 1.4, ARENA_RADIUS + 2.2, 0.6, 64),
+        floorMat
+      );
+      floor.position.y = -0.3;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      const grid = new THREE.GridHelper(ARENA_RADIUS * 2 + 2, 26, 0x2b6ca8, 0x132030);
+      grid.position.y = 0.015;
+      scene.add(grid);
+
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(ARENA_RADIUS + 0.2, 0.07, 16, 96),
+        new THREE.MeshBasicMaterial({ color: 0x37d5ff })
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 0.03;
+      scene.add(ring);
+
+      const inner = new THREE.Mesh(
+        new THREE.RingGeometry(1.3, 1.55, 48),
+        new THREE.MeshBasicMaterial({
+          color: 0x224466,
+          transparent: true,
+          opacity: 0.65,
+          side: THREE.DoubleSide
+        })
+      );
+      inner.rotation.x = -Math.PI / 2;
+      inner.position.y = 0.02;
+      scene.add(inner);
+
+      for (let i = 0; i < 10; i++) {
+        const angle = (i / 10) * Math.PI * 2;
+        const g = new THREE.Group();
+        g.position.set(
+          Math.cos(angle) * (ARENA_RADIUS + 3.2),
+          0,
+          Math.sin(angle) * (ARENA_RADIUS + 3.2)
+        );
+        g.lookAt(0, 0, 0);
+
+        const pillar = new THREE.Mesh(
+          new THREE.BoxGeometry(0.55, 6.5, 0.55),
+          new THREE.MeshStandardMaterial({
+            color: 0x11151c,
+            roughness: 0.45,
+            metalness: 0.6
+          })
+        );
+        pillar.position.y = 3.25;
+        pillar.castShadow = true;
+        g.add(pillar);
+
+        const strip = new THREE.Mesh(
+          new THREE.BoxGeometry(0.12, 6.5, 0.12),
+          new THREE.MeshBasicMaterial({
+            color: i % 2 ? 0x37d5ff : 0xff9a3d
+          })
+        );
+        strip.position.set(0, 3.25, 0.28);
+        g.add(strip);
+
+        scene.add(g);
+      }
+
+      const starCount = 500;
+      const positions = new Float32Array(starCount * 3);
+
+      for (let i = 0; i < starCount; i++) {
+        const r = 22 + Math.random() * 28;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+
+        positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = Math.abs(r * Math.cos(phi)) * 0.45 + 2;
+        positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+      }
+
+      const starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+      const stars = new THREE.Points(
+        starGeo,
+        new THREE.PointsMaterial({
+          color: 0x8fb7ff,
+          size: 0.16,
+          transparent: true,
+          opacity: 0.85
+        })
+      );
+      stars.name = 'stars';
+      scene.add(stars);
+    }
+
+    class Fighter {
+      constructor(name, colorHex, accentHex, startPosition, isPlayer) {
+        this.name = name;
+        this.isPlayer = isPlayer;
+
+        this.pos = startPosition.clone();
+        this.health = 100;
+        this.maxHealth = 100;
+
+        this.state = 'idle';
+        this.stateTime = 0;
+        this.animTime = Math.random() * 10;
+        this.walkPhase = 0;
+
+        this.attack = null;
+        this.hitstun = 0;
+        this.blockstun = 0;
+
+        this.combo = 0;
+        this.comboTimer = 0;
+
+        this.koProgress = 0;
+
+        this.forward = new THREE.Vector3(1, 0, 0);
+        this.right = new THREE.Vector3(0, 0, 1);
+
+        this.buildModel(colorHex, accentHex);
+        this.root.position.copy(this.pos);
+      }
+
+      buildModel(color, accent) {
+        this.root = new THREE.Group();
+        this.visual = new THREE.Group();
+        this.root.add(this.visual);
+
+        const mat = new THREE.MeshStandardMaterial({
+          color,
+          roughness: 0.5,
+          metalness: 0.22
+        });
+
+        const dark = new THREE.MeshStandardMaterial({
+          color: 0x121212,
+          roughness: 0.68,
+          metalness: 0.15
+        });
+
+        const accentMat = new THREE.MeshStandardMaterial({
+          color: accent,
+          roughness: 0.3,
+          metalness: 0.4,
+          emissive: accent,
+          emissiveIntensity: 0.25
+        });
+
+        this.torso = new THREE.Group();
+        this.torso.position.y = 1.02;
+        this.visual.add(this.torso);
+
+        const chest = new THREE.Mesh(
+          new THREE.BoxGeometry(0.76, 0.86, 0.44),
+          mat
+        );
+        chest.position.y = 0.38;
+        this.torso.add(chest);
+
+        const core = new THREE.Mesh(
+          new THREE.BoxGeometry(0.42, 0.42, 0.1),
+          accentMat
+        );
+        core.position.set(0, 0.42, 0.24);
+        this.torso.add(core);
+
+        const belt = new THREE.Mesh(
+          new THREE.BoxGeometry(0.58, 0.18, 0.38),
+          accentMat
+        );
+        belt.position.y = -0.05;
+        this.torso.add(belt);
+
+        const head = new THREE.Mesh(
+          new THREE.SphereGeometry(0.22, 24, 18),
+          mat
+        );
+        head.position.y = 1.02;
+        this.torso.add(head);
+
+        const visor = new THREE.Mesh(
+          new THREE.BoxGeometry(0.28, 0.08, 0.06),
+          accentMat
+        );
+        visor.position.set(0, 1.03, 0.19);
+        this.torso.add(visor);
+
+        this.armL = this.makeLimb(mat, 0.17, 0.78);
+        this.armL.position.set(-0.52, 0.78, 0);
+        this.torso.add(this.armL);
+
+        this.armR = this.makeLimb(mat, 0.17, 0.78);
+        this.armR.position.set(0.52, 0.78, 0);
+        this.torso.add(this.armR);
+
+        this.legL = this.makeLimb(dark, 0.24, 0.98);
+        this.legL.position.set(-0.23, 0.98, 0);
+        this.visual.add(this.legL);
+
+        this.legR = this.makeLimb(dark, 0.24, 0.98);
+        this.legR.position.set(0.23, 0.98, 0);
+        this.visual.add(this.legR);
+
+        this.root.traverse((obj) => {
+          if (obj.isMesh) {
+            obj.castShadow = true;
+          }
+        });
+
+        scene.add(this.root);
+      }
+
+      makeLimb(material, width, height) {
+        const group = new THREE.Group();
+
+        const limb = new THREE.Mesh(
+          new THREE.BoxGeometry(width, height, width),
+          material
+        );
+        limb.position.y = -height / 2;
+        group.add(limb);
+
+        const end = new THREE.Mesh(
+          new THREE.BoxGeometry(width * 1.35, width * 1.35, width * 1.35),
+          material
+        );
+        end.position.y = -height;
+        group.add(end);
+
+        return group;
+      }
+
+      get canAct() {
+        return this.state === 'idle' || this.state === 'walk';
+      }
+
+      setState(newState) {
+        if (this.state === newState) return;
+        this.state = newState;
+        this.stateTime = 0;
+      }
+
+      startAttack(type) {
+        const base = ATTACKS[type];
+        this.attack = {
+          type,
+          time: 0,
+          hasHit: false,
+          isActive: false,
+          ...base,
+          total: base.startup + base.active + base.recovery
+        };
+        this.setState('attack');
+        playSwing(type);
+      }
+
+      update(dt, input, opponent) {
+        this.stateTime += dt;
+        this.animTime += dt;
+
+        if (this.comboTimer > 0) {
+          this.comboTimer -= dt;
+          if (this.comboTimer <= 0) {
+            this.combo = 0;
+          }
+        }
+
+        if (this.state !== 'ko') {
+          const to = new THREE.Vector3().subVectors(opponent.pos, this.pos);
+          to.y = 0;
+
+          if (to.lengthSq() > 0.0001) {
+            this.forward.copy(to).normalize();
+            this.right.crossVectors(this.forward, UP).normalize();
+
+            const targetRot = Math.atan2(this.forward.x, this.forward.z);
+            let diff = targetRot - this.root.rotation.y;
+            diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+            this.root.rotation.y += diff * Math.min(1, 16 * dt);
+          }
+        }
+
+        if (this.state === 'ko') {
+          this.updateKO(dt);
+          return;
+        }
+
+        if (this.state === 'hitstun') {
+          this.hitstun -= dt;
+          if (this.hitstun <= 0) {
+            this.setState('idle');
+          }
+          return;
+        }
+
+        if (this.state === 'blockstun') {
+          this.blockstun -= dt;
+          if (this.blockstun <= 0) {
+            this.setState(input.block ? 'block' : 'idle');
+          }
+          return;
+        }
+
+        if (this.state === 'attack') {
+          const attack = this.attack;
+          attack.time += dt;
+
+          attack.isActive =
+            attack.time >= attack.startup &&
+            attack.time < attack.startup + attack.active;
+
+          if (attack.time < attack.startup + attack.active) {
+            const step = (attack.type === 'kick' ? 1.8 : 1.0) * dt;
+            this.tryMove(this.forward.clone().multiplyScalar(step));
+          }
+
+          if (attack.time >= attack.total) {
+            this.attack = null;
+            this.setState('idle');
+          }
+
+          return;
+        }
+
+        if (this.state === 'block') {
+          if (!input.block) {
+            this.setState('idle');
+          }
+          return;
+        }
+
+        if (input.block) {
+          this.setState('block');
+          return;
+        }
+
+        if (input.punch) {
+          this.startAttack('punch');
+          return;
+        }
+
+        if (input.kick) {
+          this.startAttack('kick');
+          return;
+        }
+
+        const move = new THREE.Vector3();
+
+        if (input.moveY) {
+          move.addScaledVector(this.forward, input.moveY);
+        }
+
+        if (input.moveX) {
+          move.addScaledVector(this.right, input.moveX);
+        }
+
+        if (move.lengthSq() > 0.001) {
+          move.normalize().multiplyScalar(SPEED * dt);
+          this.tryMove(move);
+          this.setState('walk');
+          this.walkPhase += dt * 9;
+        } else {
+          this.setState('idle');
+        }
+      }
+
+      tryMove(delta) {
+        this.pos.add(delta);
+        this.clampArena();
+      }
+
+      clampArena() {
+        const len = Math.hypot(this.pos.x, this.pos.z);
+        if (len > ARENA_RADIUS) {
+          const scale = ARENA_RADIUS / len;
+          this.pos.x *= scale;
+          this.pos.z *= scale;
+        }
+      }
+
+      updateKO(dt) {
+        this.koProgress = Math.min(1, this.koProgress + dt * 2.3);
+        this.visual.rotation.x = -this.koProgress * Math.PI / 2.15;
+        this.visual.position.y = this.koProgress * 0.18;
+      }
+
+      chestPos() {
+        return new THREE.Vector3(this.pos.x, 1.35, this.pos.z);
+      }
+
+      takeHit(attack, attacker, blocked) {
+        if (this.state === 'ko') return;
+
+        const impact = this.chestPos();
+
+        if (blocked) {
+          this.health = Math.max(0, this.health - attack.chip);
+          this.setState('blockstun');
+          this.blockstun = attack.blockstun;
+          this.pos.addScaledVector(attacker.forward, attack.knockback * 0.55);
+          this.clampArena();
+
+          spawnSpark(impact, 0x66ccff, 10);
+          playBlock();
+        } else {
+          this.health = Math.max(0, this.health - attack.damage);
+          this.setState('hitstun');
+          this.hitstun = attack.hitstun;
+          this.pos.addScaledVector(attacker.forward, attack.knockback);
+          this.clampArena();
+
+          attacker.combo++;
+          attacker.comboTimer = 1.25;
+
+          game.shake += Math.min(1.5, attack.damage * 0.06);
+          game.hitstop = Math.min(0.10, 0.03 + attack.damage * 0.004);
+
+          spawnSpark(impact, 0xffaa33, 20);
+          playHit(attack.damage / 12);
+        }
+
+        if (this.health <= 0) {
+          this.attack = null;
+          this.hitstun = 0;
+          this.blockstun = 0;
+          this.setState('ko');
+          spawnSpark(impact, 0xff3355, 30);
+          game.shake += 1.5;
+          playKO();
+        }
+      }
+
+      sync() {
+        this.root.position.copy(this.pos);
+        this.root.position.y = 0;
+      }
+
+      animate(dt) {
+        const t = this.animTime;
+
+        let armLX = 0.16;
+        let armLZ = 0.16;
+        let armRX = 0.16;
+        let armRZ = -0.16;
+        let legLX = 0;
+        let legRX = 0;
+        let torsoX = 0.02;
+        let torsoY = 0;
+
+        if (this.state === 'walk') {
+          const s = Math.sin(this.walkPhase);
+          legLX = s * 0.55;
+          legRX = -s * 0.55;
+          armLX = 0.12 - s * 0.35;
+          armRX = 0.12 + s * 0.35;
+          torsoX = 0.07;
+        } else if (this.state === 'idle') {
+          const b = Math.sin(t * 2.3) * 0.06;
+          armLX = 0.15 + b;
+          armRX = 0.15 - b;
+          torsoX = 0.03 + Math.sin(t * 1.4) * 0.02;
+        } else if (this.state === 'block' || this.state === 'blockstun') {
+          armLX = -1.22;
+          armLZ = 0.56;
+          armRX = -1.22;
+          armRZ = -0.56;
+          torsoX = 0.16;
+          legLX = -0.16;
+          legRX = 0.22;
+        } else if (this.state === 'hitstun') {
+          torsoX = -0.36;
+          armLX = -0.60;
+          armLZ = 0.78;
+          armRX = -0.50;
+          armRZ = -0.78;
+          legLX = -0.20;
+          legRX = 0.28;
+        } else if (this.state === 'attack' && this.attack) {
+          const attack = this.attack;
+          const activeStart = attack.startup;
+          const activeEnd = attack.startup + attack.active;
+
+          let ext = 0;
+
+          if (attack.time < activeStart) {
+            ext = easeOutQuad(clamp01(attack.time / activeStart));
+          } else if (attack.time < activeEnd) {
+            ext = 1;
+          } else {
+            ext = 1 - easeInQuad(clamp01((attack.time - activeEnd) / attack.recovery));
+          }
+
+          if (attack.type === 'punch') {
+            armRX = -1.72 * ext;
+            armRZ = -0.12 * ext;
+            armLX = 0.50 * ext + 0.12;
+            torsoY = -0.55 * ext;
+            torsoX = 0.09 * ext;
+            legRX = 0.16 * ext;
+          } else {
+            legRX = -1.95 * ext;
+            torsoX = 0.32 * ext;
+            armRX = 0.50 * ext;
+            armLX = -0.35 * ext;
+            legLX = 0.18 * ext;
+            torsoY = -0.22 * ext;
+          }
+        }
+
+        if (this.state === 'ko') {
+          armLX = -0.35;
+          armLZ = 0.85;
+          armRX = -0.35;
+          armRZ = -0.85;
+          legLX = 0.18;
+          legRX = -0.24;
+          torsoX = 0;
+          torsoY = 0;
+        }
+
+        const k = 1 - Math.exp(-22 * Math.max(dt, 0.0001));
+
+        this.armL.rotation.x += (armLX - this.armL.rotation.x) * k;
+        this.armL.rotation.z += (armLZ - this.armL.rotation.z) * k;
+
+        this.armR.rotation.x += (armRX - this.armR.rotation.x) * k;
+        this.armR.rotation.z += (armRZ - this.armR.rotation.z) * k;
+
+        this.legL.rotation.x += (legLX - this.legL.rotation.x) * k;
+        this.legR.rotation.x += (legRX - this.legR.rotation.x) * k;
+
+        this.torso.rotation.x += (torsoX - this.torso.rotation.x) * k;
+        this.torso.rotation.y += (torsoY - this.torso.rotation.y) * k;
+
+        if (this.state !== 'ko') {
+          this.visual.rotation.x += (0 - this.visual.rotation.x) * k;
+          this.visual.rotation.z += (0 - this.visual.rotation.z) * k;
+          this.visual.position.y += (0 - this.visual.position.y) * k;
+        }
+      }
+    }
+
+    class AI {
+      constructor(fighter, opponent) {
+        this.f = fighter;
+        this.o = opponent;
+        this.difficulty = 0.55;
+        this.decisionTimer = 0;
+        this.input = {
+          moveX: 0,
+          moveY: 0,
+          punch: false,
+          kick: false,
+          block: false
+        };
+      }
+
+      reset() {
+        this.input.moveX = 0;
+        this.input.moveY = 0;
+        this.input.punch = false;
+        this.input.kick = false;
+        this.input.block = false;
+        this.decisionTimer = 0;
+        this.difficulty = Math.min(0.9, 0.45 + game.round * 0.15);
+      }
+
+      update(dt) {
+        const i = this.input;
+        i.punch = false;
+        i.kick = false;
+
+        if (this.f.state === 'ko' || this.f.state === 'hitstun') {
+          i.block = false;
+          i.moveX = 0;
+          i.moveY = 0;
+          return i;
+        }
+
+        this.decisionTimer -= dt;
+
+        const dist = this.f.pos.distanceTo(this.o.pos);
+        const opponentAttacking = this.o.state === 'attack';
+
+        if (this.decisionTimer <= 0) {
+          this.decisionTimer = 0.10 + Math.random() * 0.22;
+
+          i.block = false;
+          i.moveX = 0;
+          i.moveY = 0;
+
+          const r = Math.random();
+
+          if (opponentAttacking && Math.random() < 0.30 + this.difficulty * 0.35) {
+            if (Math.random() < 0.65) {
+              i.block = true;
+            } else {
+              i.moveX = Math.random() < 0.5 ? 1 : -1;
+            }
+          } else if (dist > 2.5) {
+            if (r < 0.75) {
+              i.moveY = 1;
+            } else if (r < 0.90) {
+              i.moveX = Math.random() < 0.5 ? 1 : -1;
+            } else {
+              i.moveY = 0;
+            }
+          } else {
+            if (r < 0.36) {
+              i.punch = true;
+            } else if (r < 0.60) {
+              i.kick = true;
+            } else if (r < 0.72) {
+              i.block = true;
+            } else if (r < 0.86) {
+              i.moveY = -1;
+            } else {
+              i.moveX = Math.random() < 0.5 ? 1 : -1;
+            }
+          }
+        }
+
+        if (this.f.canAct && dist < 2.1 && Math.random() < dt * (1.0 + this.difficulty * 2.0)) {
+          i.block = false;
+          i.moveX = 0;
+          i.moveY = 0;
+
+          if (Math.random() < 0.55) {
+            i.punch = true;
+          } else {
+            i.kick = true;
+          }
+        }
+
+        if (i.block && Math.random() < dt * 1.7) {
+          i.block = false;
+        }
+
+        return i;
+      }
+    }
+
+    function loop(now) {
+      requestAnimationFrame(loop);
+
+      const rawDt = Math.min(0.033, (now - performance.now() + now - now) ? 0.016 : 0.016);
+      const realLast = loop.last || now - 16;
+      const dtRaw = Math.min(0.033, (now - realLast) / 1000);
+      loop.last = now;
+
+      let dt = dtRaw;
+
+      if (game.hitstop > 0) {
+        game.hitstop -= dtRaw;
+        dt = 0;
+      }
+
+      update(dt, dtRaw);
+      renderer.render(scene, camera);
+
+      for (const key in just) {
+        just[key] = false;
+      }
+    }
+
+    function update(dt, rawDt) {
+      game.time += rawDt;
+      game.shake = Math.max(0, game.shake - rawDt * 5);
+
+      if (game.state === 'menu') {
+        if (just.Enter) {
+          startFromOverlay();
+          return;
+        }
+
+        p1.update(dt, emptyInput(), p2);
+        p2.update(dt, emptyInput(), p1);
+      } else if (game.state === 'intro') {
+        game.stateTimer += rawDt;
+
+        p1.update(dt, emptyInput(), p2);
+        p2.update(dt, emptyInput(), p1);
+
+        if (game.stateTimer > 1.45) {
+          game.state = 'fighting';
+          showMessage('FIGHT!', '', 0.65);
+        }
+      } else if (game.state === 'fighting') {
+        game.timer -= dt;
+
+        const input1 = getPlayerInput();
+        const input2 = ai.update(dt);
+
+        p1.update(dt, input1, p2);
+        p2.update(dt, input2, p1);
+
+        separateFighters();
+        processCombat();
+
+        if (p1.health <= 0 || p2.health <= 0 || game.timer <= 0) {
+          endRound();
+        }
+      } else if (game.state === 'roundEnd') {
+        game.stateTimer += rawDt;
+
+        p1.update(dt, emptyInput(), p2);
+        p2.update(dt, emptyInput(), p1);
+
+        if (game.stateTimer > 2.55) {
+          if (game.wins[0] >= 2 || game.wins[1] >= 2) {
+            game.state = 'matchEnd';
+            const winner = game.wins[0] >= 2 ? p1.name : p2.name;
+            showMessage('MATCH ENDE', `${winner} GEWINNT • ENTER = REMATCH`, 999);
+          } else {
+            game.round++;
+            resetRound();
+            startIntro();
+          }
+        }
+      } else if (game.state === 'matchEnd') {
+        p1.update(dt, emptyInput(), p2);
+        p2.update(dt, emptyInput(), p1);
+
+        if (just.Enter) {
+          startMatch();
+        }
+      }
+
+      p1.sync();
+      p2.sync();
+
+      p1.animate(dt);
+      p2.animate(dt);
+
+      updateEffects(dt);
+      updateCamera(rawDt);
+      updateUI();
+    }
+
+    function getPlayerInput() {
+      return {
+        moveX: (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0),
+        moveY: (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0),
+        punch: just.KeyJ,
+        kick: just.KeyK,
+        block: keys.KeyL
+      };
+    }
+
+    function emptyInput() {
+      return {
+        moveX: 0,
+        moveY: 0,
+        punch: false,
+        kick: false,
+        block: false
+      };
+    }
+
+    function processCombat() {
+      checkHit(p1, p2);
+      checkHit(p2, p1);
+    }
+
+    function checkHit(attacker, defender) {
+      if (!attacker.attack || !attacker.attack.isActive || attacker.attack.hasHit) return;
+      if (defender.state === 'ko') return;
+
+      const to = new THREE.Vector3().subVectors(defender.pos, attacker.pos);
+      to.y = 0;
+
+      const forwardDist = to.dot(attacker.forward);
+      const lateral = Math.abs(to.dot(attacker.right));
+
+      const attack = attacker.attack;
+
+      if (
+        forwardDist > 0.25 &&
+        forwardDist <= attack.range &&
+        lateral <= attack.lateral
+      ) {
+        attacker.attack.hasHit = true;
+
+        const blocked =
+          defender.state === 'block' ||
+          defender.state === 'blockstun';
+
+        defender.takeHit(attack, attacker, blocked);
+      }
+    }
+
+    function separateFighters() {
+      const delta = new THREE.Vector3().subVectors(p2.pos, p1.pos);
+      delta.y = 0;
+
+      const d = delta.length();
+      const minD = 1.05;
+
+      if (d < minD) {
+        if (d < 0.0001) {
+          delta.set(1, 0, 0);
+        } else {
+          delta.normalize();
+        }
+
+        const push = (minD - d) / 2;
+
+        p1.pos.addScaledVector(delta, -push);
+        p2.pos.addScaledVector(delta, push);
+
+        p1.clampArena();
+        p2.clampArena();
+      }
+    }
+
+    function startFromOverlay() {
+      initAudio();
+      overlayEl.style.display = 'none';
+      startMatch();
+    }
+
+    function startMatch() {
+      game.wins = [0, 0];
+      game.round = 1;
+      resetRound();
+      startIntro();
+    }
+
+    function resetRound() {
+      game.timer = 60;
+
+      const fighters = [p1, p2];
+
+      fighters.forEach((f, index) => {
+        f.health = f.maxHealth;
+        f.state = 'idle';
+        f.stateTime = 0;
+        f.attack = null;
+        f.hitstun = 0;
+        f.blockstun = 0;
+        f.combo = 0;
+        f.comboTimer = 0;
+        f.koProgress = 0;
+
+        f.visual.rotation.set(0, 0, 0);
+        f.visual.position.set(0, 0, 0);
+
+        f.pos.set(index === 0 ? -2.2 : 2.2, 0, 0);
+        f.sync();
+      });
+
+      ai.reset();
+      updateUI();
+    }
+
+    function startIntro() {
+      game.state = 'intro';
+      game.stateTimer = 0;
+      showMessage(
+        `RUNDE ${game.round}`,
+        `BEST OF 3 • ${game.wins[0]} : ${game.wins[1]}`,
+        1.4
+      );
+    }
+
+    function endRound() {
+      if (game.state !== 'fighting') return;
+
+      game.state = 'roundEnd';
+      game.stateTimer = 0;
+
+      let winner = -1;
+
+      if (p1.health <= 0 && p2.health <= 0) {
+        winner = -1;
+      } else if (p1.health <= 0) {
+        winner = 1;
+      } else if (p2.health <= 0) {
+        winner = 0;
+      } else if (p1.health > p2.health) {
+        winner = 0;
+      } else if (p2.health > p1.health) {
+        winner = 1;
+      }
+
+      if (winner >= 0) {
+        game.wins[winner]++;
+      }
+
+      const main = (p1.health <= 0 || p2.health <= 0) ? 'K.O.!' : 'ZEIT!';
+      const sub = winner === -1
+        ? 'UNENTSCHIEDEN'
+        : `${winner === 0 ? p1.name : p2.name} GEWINNT DIE RUNDE`;
+
+      showMessage(main, sub, 2.4);
+    }
+
+    function showMessage(text, sub = '', duration = 1) {
+      messageEl.innerHTML = `
+        <div>${text}</div>
+        ${sub ? `<div class="sub">${sub}</div>` : ''}
+      `;
+      messageEl.classList.add('show');
+
+      clearTimeout(messageTimeout);
+      messageTimeout = setTimeout(() => {
+        messageEl.classList.remove('show');
+      }, duration * 1000);
+    }
+
+    function updateUI() {
+      p1HealthEl.style.transform = `scaleX(${p1.health / 100})`;
+      p2HealthEl.style.transform = `scaleX(${p2.health / 100})`;
+
+      timerEl.textContent = Math.ceil(Math.max(0, game.timer));
+
+      document.querySelectorAll('#p1rounds span').forEach((el, i) => {
+        el.classList.toggle('win', game.wins[0] > i);
+      });
+
+      document.querySelectorAll('#p2rounds span').forEach((el, i) => {
+        el.classList.toggle('win', game.wins[1] > i);
+      });
+
+      if (p1.combo > 1 && p1.comboTimer > 0) {
+        combo1El.style.opacity = '1';
+        combo1El.textContent = `${p1.combo} HITS`;
+      } else {
+        combo1El.style.opacity = '0';
+      }
+
+      if (p2.combo > 1 && p2.comboTimer > 0) {
+        combo2El.style.opacity = '1';
+        combo2El.textContent = `${p2.combo} HITS`;
+      } else {
+        combo2El.style.opacity = '0';
+      }
+    }
+
+    function updateCamera(dt) {
+      const target = new THREE.Vector3()
+        .addVectors(p1.pos, p2.pos)
+        .multiplyScalar(0.5);
+      target.y = 1.15;
+
+      const line = new THREE.Vector3().subVectors(p2.pos, p1.pos);
+      line.y = 0;
+
+      if (line.lengthSq() < 0.001) {
+        line.set(1, 0, 0);
+      }
+
+      const side = new THREE.Vector3(-line.z, 0, line.x).normalize();
+
+      if (side.dot(camSide) < 0) {
+        side.negate();
+      }
+
+      camSide.lerp(side, 1 - Math.exp(-5 * dt)).normalize();
+
+      const separation = p1.pos.distanceTo(p2.pos);
+      const dist = THREE.MathUtils.clamp(4.2 + separation * 0.9, 5.4, 10.8);
+
+      const desired = target
+        .clone()
+        .addScaledVector(camSide, dist)
+        .add(new THREE.Vector3(0, 2.3, 0));
+
+      if (game.shake > 0) {
+        desired.x += (Math.random() - 0.5) * game.shake * 0.16;
+        desired.y += (Math.random() - 0.5) * game.shake * 0.12;
+        desired.z += (Math.random() - 0.5) * game.shake * 0.16;
+      }
+
+      camera.position.lerp(desired, 1 - Math.exp(-14 * dt));
+      camera.lookAt(target);
+    }
+
+    function spawnSpark(pos, color, count) {
+      const amount = Math.min(count, 26);
+
+      for (let i = 0; i < amount; i++) {
+        const mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(0.05, 0.05, 0.05),
+          new THREE.MeshBasicMaterial({ color })
+        );
+
+        mesh.position.copy(pos);
+        mesh.position.x += (Math.random() - 0.5) * 0.35;
+        mesh.position.y += (Math.random() - 0.5) * 0.35;
+        mesh.position.z += (Math.random() - 0.5) * 0.35;
+
+        const vel = new THREE.Vector3(
+          (Math.random() - 0.5) * 5,
+          Math.random() * 5,
+          (Math.random() - 0.5) * 5
+        );
+
+        sparks.push({
+          mesh,
+          vel,
+          life: 0.38,
+          max: 0.38
+        });
+
+        scene.add(mesh);
+      }
+
+      if (sparks.length > 160) {
+        const old = sparks.shift();
+        scene.remove(old.mesh);
+      }
+    }
+
+    function updateEffects(dt) {
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const s = sparks[i];
+        s.life -= dt;
+
+        if (s.life <= 0) {
+          scene.remove(s.mesh);
+          sparks.splice(i, 1);
+          continue;
+        }
+
+        s.mesh.position.addScaledVector(s.vel, dt);
+        s.vel.y -= 12 * dt;
+
+        const scale = Math.max(0.01, s.life / s.max);
+        s.mesh.scale.setScalar(scale);
+      }
+
+      const stars = scene.getObjectByName('stars');
+      if (stars) {
+        stars.rotation.y += dt * 0.02;
+      }
+    }
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playSwing(type = 'punch') {
+      if (!audioCtx) return;
+
+      const now = audioCtx.currentTime;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(type === 'kick' ? 170 : 250, now);
+      osc.frequency.exponentialRampToValueAtTime(type === 'kick' ? 60 : 90, now + 0.09);
+
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.10);
+
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.11);
+    }
+
+    function playHit(power = 1) {
+      if (!audioCtx) return;
+
+      const now = audioCtx.currentTime;
+      const len = 0.16;
+
+      const buffer = audioCtx.createBuffer(
+        1,
+        Math.floor(audioCtx.sampleRate * len),
+        audioCtx.sampleRate
+      );
+
+      const data = buffer.getChannelData(0);
+
+      for (let i = 0; i < data.length; i++) {
+        const t = i / data.length;
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 1.8);
+      }
+
+      const src = audioCtx.createBufferSource();
+      src.buffer = buffer;
+
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(Math.min(0.5, 0.22 + power * 0.15), now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + len);
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(900 + power * 500, now);
+
+      src.connect(filter).connect(gain).connect(audioCtx.destination);
+      src.start();
+
+      const osc = audioCtx.createOscillator();
+      const oscGain = audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(160 + power * 30, now);
+      osc.frequency.exponentialRampToValueAtTime(45, now + 0.13);
+
+      oscGain.gain.setValueAtTime(0.26, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+
+      osc.connect(oscGain).connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    }
+
+    function playBlock() {
+      if (!audioCtx) return;
+
+      const now = audioCtx.currentTime;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(320, now + 0.07);
+
+      gain.gain.setValueAtTime(0.14, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.09);
+    }
+
+    function playKO() {
+      if (!audioCtx) return;
+
+      playHit(2.4);
+
+      const now = audioCtx.currentTime;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(120, now);
+      osc.frequency.exponentialRampToValueAtTime(28, now + 0.65);
+
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.70);
+
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.72);
+    }
+
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function clamp01(value) {
+      return Math.max(0, Math.min(1, value));
+    }
+
+    function easeOutQuad(x) {
+      return 1 - (1 - x) * (1 - x);
+    }
+
+    function easeInQuad(x) {
+      return x * x;
+    }
+  </script>
+</body>
+</html>
