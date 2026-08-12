@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
-  <title>Iron Fist Arena - Easy Action Beat Edition</title>
+  <title>Iron Fist Arena - Smart Zoom Beat Edition</title>
   <style>
     :root {
       --p1: #31b8ff;
@@ -643,7 +643,7 @@
 
     <div id="controls">
       WASD: Bewegen / Sidestep • J: Schlag • K: Tritt • L: Blocken • R: Special<br>
-      Angriffe auf den Beat machen mehr Schaden • ENTER: Rematch • C: Charakter
+      Mobile: Smart Zoom + Touch-Assist aktiv • ENTER: Rematch • C: Charakter
     </div>
   </div>
 
@@ -693,10 +693,10 @@
     <p>Wähle deinen Kämpfer</p>
     <div id="charCards" class="cards"></div>
     <div class="panel">
-      <strong>Easy Action Mode</strong>: Spieler stärker, CPU schwächer, mehr Beat-Power<br>
+      <strong>Smart Zoom</strong>: Kamera zoomt auf Mobile automatisch raus<br>
       <strong>Beat-Gameplay</strong>: Angriffe / Blocks auf den Beat geben Boni<br>
       Desktop: WASD • J Schlag • K Tritt • L Blocken • R Special<br>
-      Mobile: linker Joystick • sehr große rechte Buttons mit Beschriftung
+      Mobile: linker Joystick • sehr große rechte Buttons + Touch-Assist
     </div>
   </div>
 
@@ -789,11 +789,13 @@
     let gridMat = null;
     let polarMat = null;
     let centerGlowMat = null;
+    let floorMat = null;
     let dust = null;
     let sunLight = null;
     let noiseBuffer = null;
     let glowTexture = null;
     let sfxMaster = null;
+    let isTouchDevice = false;
 
     const sparks = [];
     const rings = [];
@@ -1838,26 +1840,26 @@
     }
 
     function init() {
-      const isCoarse =
-        window.matchMedia &&
-        window.matchMedia('(pointer: coarse)').matches;
+      isTouchDevice =
+        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
+        'ontouchstart' in window;
 
-      initialQuality = isCoarse ? 1 : 2;
+      initialQuality = isTouchDevice ? 1 : 2;
 
       scene = new THREE.Scene();
       scene.background = makeBackgroundTexture();
-      scene.fog = new THREE.Fog(0x03060c, 16, 55);
+      scene.fog = new THREE.Fog(0x03060c, 16, 60);
 
       camera = new THREE.PerspectiveCamera(
         50,
         window.innerWidth / window.innerHeight,
         0.1,
-        100
+        120
       );
-      camera.position.set(0, 3, 8);
+      camera.position.set(0, 4, 12);
 
       renderer = new THREE.WebGLRenderer({
-        antialias: !isCoarse,
+        antialias: !isTouchDevice,
         powerPreference: 'high-performance'
       });
 
@@ -2114,10 +2116,11 @@
     }
 
     function buildArena() {
-      const floorMat = new THREE.MeshStandardMaterial({
+      floorMat = new THREE.MeshStandardMaterial({
         color: 0x0d1118,
         roughness: 0.30,
-        metalness: 0.78
+        metalness: 0.78,
+        emissive: 0x000000
       });
 
       const floor = new THREE.Mesh(
@@ -2361,11 +2364,7 @@
     }
 
     function setupTouchControls() {
-      const isTouch =
-        window.matchMedia('(pointer: coarse)').matches ||
-        'ontouchstart' in window;
-
-      if (isTouch) {
+      if (isTouchDevice) {
         mobileControlsEl.style.display = 'block';
       }
 
@@ -2488,7 +2487,7 @@
           const now = audioCtx.currentTime;
           music.gain.gain.cancelScheduledValues(now);
           music.gain.gain.setValueAtTime(music.gain.gain.value, now);
-          music.gain.gain.linearRampToValueAtTime(game.musicOn ? 0.22 : 0, now + 0.15);
+          music.gain.gain.linearRampToValueAtTime(game.musicOn ? 0.24 : 0, now + 0.15);
         }
       }
 
@@ -2829,14 +2828,16 @@
       to.y = 0;
 
       const forwardDist = to.dot(attacker.forward);
-      const lateral = Math.abs(to.dot(attacker.right));
+      const lateralDist = Math.abs(to.dot(attacker.right));
 
-      const attack = attacker.attack;
+      const touchAssist = attacker.isPlayer && isTouchDevice;
+      const rangeLimit = attack.range + (touchAssist ? 0.22 : 0);
+      const lateralLimit = attack.lateral * (touchAssist ? 1.25 : 1.0);
 
       if (
         forwardDist > 0.25 &&
-        forwardDist <= attack.range &&
-        lateral <= attack.lateral
+        forwardDist <= rangeLimit &&
+        lateralDist <= lateralLimit
       ) {
         attacker.attack.hasHit = true;
 
@@ -2844,7 +2845,7 @@
           defender.state === 'block' ||
           defender.state === 'blockstun';
 
-        defender.takeHit(attack, attacker, blocked);
+        defender.takeHit(attacker.attack, attacker, blocked);
       }
     }
 
@@ -3091,6 +3092,13 @@
         : 0;
     }
 
+    function fitCameraDistance(separation, aspect, fovDeg) {
+      const vFov = THREE.MathUtils.degToRad(fovDeg);
+      const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
+      const halfSpan = separation * 0.5 + 2.2;
+      return halfSpan / Math.tan(hFov / 2);
+    }
+
     function updateCamera(dt) {
       game.camX += (game.camTargetX - game.camX) * (1 - Math.exp(-6 * dt));
       game.camY += (game.camTargetY - game.camY) * (1 - Math.exp(-6 * dt));
@@ -3100,7 +3108,7 @@
         .addVectors(p1.pos, p2.pos)
         .multiplyScalar(0.5);
 
-      target.y = 1.15;
+      target.y = 1.05;
 
       const line = new THREE.Vector3().subVectors(p2.pos, p1.pos);
       line.y = 0;
@@ -3118,15 +3126,36 @@
       camSide.lerp(side, 1 - Math.exp(-5 * dt)).normalize();
 
       const separation = p1.pos.distanceTo(p2.pos);
-      const dist = THREE.MathUtils.clamp(4.2 + separation * 0.9, 5.4, 10.8);
+      const aspect = window.innerWidth / window.innerHeight;
+
+      let minDist, maxDist, baseFov, baseHeight;
+
+      if (isTouchDevice || aspect < 1.35) {
+        minDist = 7.5;
+        maxDist = 30.0;
+        baseFov = 60;
+        baseHeight = 3.1;
+      } else {
+        minDist = 5.4;
+        maxDist = 13.5;
+        baseFov = 50;
+        baseHeight = 2.3;
+      }
+
+      const fitDist = fitCameraDistance(separation + 1.0, aspect, baseFov);
+      const dist = clamp(fitDist, minDist, maxDist);
+
+      const camHeight = baseHeight + dist * 0.045;
 
       const desired = target
         .clone()
         .addScaledVector(camSide, dist)
-        .add(new THREE.Vector3(0, 2.3, 0));
+        .add(new THREE.Vector3(0, camHeight, 0));
 
-      desired.addScaledVector(camSide, game.camX * 0.8);
-      desired.y += -game.camY * 0.55;
+      const parallaxScale = isTouchDevice ? 0.30 : 0.80;
+
+      desired.addScaledVector(camSide, game.camX * parallaxScale);
+      desired.y += -game.camY * parallaxScale * 0.6;
 
       if (game.shake > 0) {
         desired.x += (Math.random() - 0.5) * game.shake * 0.16;
@@ -3137,7 +3166,7 @@
       camera.position.lerp(desired, 1 - Math.exp(-14 * dt));
       camera.lookAt(target);
 
-      const targetFov = 50 + game.fovPunch + game.barPulse * 1.2;
+      const targetFov = baseFov + game.fovPunch + game.barPulse * 1.2;
 
       if (Math.abs(camera.fov - targetFov) > 0.01) {
         camera.fov = targetFov;
@@ -3273,6 +3302,23 @@
           game.barPulse * 0.03;
       });
 
+      if (scene.fog) {
+        scene.fog.color.setHSL(
+          0.62,
+          0.55,
+          0.025 + game.beatPulse * 0.008 + game.musicIntensity * 0.012
+        );
+      }
+
+      if (floorMat) {
+        floorMat.emissive.setHSL(
+          0.58,
+          0.7,
+          game.barPulse * 0.025 + game.beatPulse * 0.008
+        );
+        floorMat.emissiveIntensity = 0.16 + game.barPulse * 0.16;
+      }
+
       if (ringMat) {
         ringMat.opacity =
           0.48 +
@@ -3322,7 +3368,7 @@
 
       if (audioCtx && !sfxMaster) {
         sfxMaster = audioCtx.createGain();
-        sfxMaster.gain.value = 0.15;
+        sfxMaster.gain.value = 0.13;
         sfxMaster.connect(audioCtx.destination);
       }
     }
@@ -3335,7 +3381,7 @@
       if (!audioCtx || music.playing) return;
 
       music.gain = audioCtx.createGain();
-      music.gain.gain.value = game.musicOn ? 0.22 : 0;
+      music.gain.gain.value = game.musicOn ? 0.24 : 0;
       music.gain.connect(audioCtx.destination);
 
       music.playing = true;
@@ -3373,6 +3419,14 @@
 
       const intensity = game.musicIntensity || 0;
       const arpFilter = 1500 + intensity * 1800;
+
+      if (step % 64 === 56) {
+        playMusicRiser(time);
+      }
+
+      if (step % 64 === 0) {
+        playMusicHat(time, 0.025);
+      }
 
       if (step % 4 === 0) {
         playMusicKick(time);
@@ -3507,6 +3561,29 @@
       src.connect(filter).connect(gain).connect(music.gain);
       src.start(time);
       src.stop(time + 0.05);
+    }
+
+    function playMusicRiser(time) {
+      if (!audioCtx || !music.gain) return;
+
+      const src = audioCtx.createBufferSource();
+      src.buffer = getNoiseBuffer();
+      src.loop = true;
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.Q.value = 1.2;
+      filter.frequency.setValueAtTime(400, time);
+      filter.frequency.exponentialRampToValueAtTime(5500, time + 0.55);
+
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.0001, time);
+      gain.gain.linearRampToValueAtTime(0.035, time + 0.45);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.60);
+
+      src.connect(filter).connect(gain).connect(music.gain);
+      src.start(time);
+      src.stop(time + 0.65);
     }
 
     function getNoiseBuffer() {
