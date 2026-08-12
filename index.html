@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
-  <title>Iron Fist Arena - Big Controls + FPS Boost</title>
+  <title>Iron Fist Arena - Beat Driven Edition</title>
   <style>
     :root {
       --p1: #31b8ff;
@@ -256,6 +256,39 @@
       line-height: 1.6;
     }
 
+    #beatUi {
+      position: fixed;
+      left: 50%;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      z-index: 6;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+    }
+
+    #beatDot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.88);
+      box-shadow: 0 0 18px rgba(140,220,255,.75);
+      transform: scale(1);
+    }
+
+    #beatBonus {
+      font-weight: 900;
+      font-size: 18px;
+      letter-spacing: 2px;
+      color: #7dffd4;
+      text-shadow: 0 0 12px rgba(0,255,200,.5);
+      opacity: 0;
+      transition: opacity .12s;
+      white-space: nowrap;
+    }
+
     #sys {
       position: fixed;
       top: calc(92px + env(safe-area-inset-top));
@@ -306,8 +339,8 @@
       position: absolute;
       left: max(14px, env(safe-area-inset-left));
       bottom: max(14px, env(safe-area-inset-bottom));
-      width: min(46vw, 36vh, 240px);
-      height: min(46vw, 36vh, 240px);
+      width: min(42vw, 38vh, 250px);
+      height: min(42vw, 38vh, 250px);
       pointer-events: auto;
       touch-action: none;
     }
@@ -316,7 +349,7 @@
       position: absolute;
       inset: 0;
       border-radius: 50%;
-      border: 3px solid rgba(255,255,255,.30);
+      border: 4px solid rgba(255,255,255,.32);
       background:
         radial-gradient(circle, rgba(255,255,255,.09), rgba(0,0,0,.18));
       box-shadow: 0 0 24px rgba(0,0,0,.25);
@@ -333,7 +366,7 @@
       border-radius: 50%;
       background:
         radial-gradient(circle, rgba(255,255,255,.92), rgba(120,200,255,.52));
-      box-shadow: 0 0 20px rgba(120,220,255,.38);
+      box-shadow: 0 0 22px rgba(120,220,255,.38);
       transform: translate(0, 0);
     }
 
@@ -342,9 +375,9 @@
       right: max(14px, env(safe-area-inset-right));
       bottom: max(14px, env(safe-area-inset-bottom));
       display: grid;
-      grid-template-columns: repeat(2, min(23vw, 19vh, 96px));
-      grid-auto-rows: min(23vw, 19vh, 96px);
-      gap: min(3.2vw, 16px);
+      grid-template-columns: repeat(2, min(27vw, 23vh, 112px));
+      grid-auto-rows: min(27vw, 23vh, 112px);
+      gap: min(3.6vw, 18px);
       pointer-events: auto;
       touch-action: none;
     }
@@ -354,11 +387,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: min(8vw, 36px);
+      font-size: min(9vw, 42px);
       font-weight: 900;
       color: #fff;
-      border: 3px solid rgba(255,255,255,.38);
-      background: rgba(255,255,255,.13);
+      border: 4px solid rgba(255,255,255,.42);
+      background: rgba(255,255,255,.14);
       backdrop-filter: blur(4px);
       text-shadow: 0 0 10px rgba(0,0,0,.5);
       user-select: none;
@@ -367,17 +400,17 @@
 
     .actionBtn:active {
       transform: scale(.94);
-      background: rgba(255,255,255,.24);
+      background: rgba(255,255,255,.25);
     }
 
     #btnSpecial {
-      background: rgba(255,180,0,.24);
-      border-color: rgba(255,200,80,.58);
+      background: rgba(255,180,0,.26);
+      border-color: rgba(255,200,80,.62);
     }
 
     #btnBlock {
-      background: rgba(80,160,255,.22);
-      border-color: rgba(120,200,255,.58);
+      background: rgba(80,160,255,.24);
+      border-color: rgba(120,200,255,.62);
     }
 
     #overlay {
@@ -531,6 +564,10 @@
       #sys {
         top: calc(80px + env(safe-area-inset-top));
       }
+
+      #beatBonus {
+        font-size: 15px;
+      }
     }
   </style>
 </head>
@@ -571,8 +608,13 @@
 
     <div id="controls">
       WASD: Bewegen / Sidestep • J: Schlag • K: Tritt • L: Blocken • R: Special<br>
-      ENTER: Rematch • C: Charakterwechsel • Gyro/Maus bewegt die Kamera leicht mit
+      Angriffe auf den Beat machen mehr Schaden • ENTER: Rematch • C: Charakter
     </div>
+  </div>
+
+  <div id="beatUi">
+    <div id="beatDot"></div>
+    <div id="beatBonus">ON BEAT</div>
   </div>
 
   <div id="sys">
@@ -601,9 +643,9 @@
     <p>Wähle deinen Kämpfer</p>
     <div id="charCards" class="cards"></div>
     <div class="panel">
-      <strong>Neu</strong>: Critical Hits, Counter nach Block, Rage-Aura, Perfect Round<br>
+      <strong>Beat-Gameplay</strong>: Angriffe und Blocks auf den Beat geben Boni<br>
       Desktop: WASD • J Schlag • K Tritt • L Blocken • R Special<br>
-      Mobile: großer linker Joystick • große rechte Buttons<br>
+      Mobile: großer linker Joystick • sehr große rechte Buttons<br>
       Best of 3 Runden • Special-Leiste voll = R / ⚡
     </div>
   </div>
@@ -613,6 +655,7 @@
 
     const ARENA_RADIUS = 7;
     const UP = new THREE.Vector3(0, 1, 0);
+    const BPM = 104;
 
     const ATTACKS = {
       punch: {
@@ -694,9 +737,12 @@
     let ringMesh = null;
     let ringMat = null;
     let gridMat = null;
+    let polarMat = null;
+    let centerGlowMat = null;
     let dust = null;
     let sunLight = null;
     let noiseBuffer = null;
+    let glowTexture = null;
 
     const sparks = [];
     const rings = [];
@@ -713,7 +759,9 @@
       gain: null,
       timer: null,
       step: 0,
-      nextTime: 0
+      nextTime: 0,
+      startTime: 0,
+      beatDuration: 60 / BPM
     };
 
     const quality = {
@@ -723,6 +771,7 @@
       lights: true,
       dust: true,
       stars: true,
+      glowSprites: true,
       maxSparks: 160,
       maxRings: 26
     };
@@ -743,6 +792,8 @@
       shake: 0,
       fovPunch: 0,
       beatPulse: 0,
+      beatBonusTimer: 0,
+      beatBonusText: 'ON BEAT',
       musicOn: true,
       gyroEnabled: false,
       camTargetX: 0,
@@ -767,6 +818,8 @@
     const charCardsEl = document.getElementById('charCards');
     const flashEl = document.getElementById('flash');
     const vignetteEl = document.getElementById('vignette');
+    const beatDotEl = document.getElementById('beatDot');
+    const beatBonusEl = document.getElementById('beatBonus');
 
     const btnMusic = document.getElementById('btnMusic');
     const btnGyro = document.getElementById('btnGyro');
@@ -800,6 +853,7 @@
 
         this.special = 0;
         this.counterTimer = 0;
+        this.beatCombo = 0;
 
         this.state = 'idle';
         this.stateTime = 0;
@@ -939,6 +993,22 @@
           this.root.add(this.glowLight);
         }
 
+        if (glowTexture && quality.glowSprites) {
+          this.glowSpriteMat = new THREE.SpriteMaterial({
+            map: glowTexture,
+            color: accent,
+            transparent: true,
+            opacity: 0.14,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+          });
+
+          this.glowSprite = new THREE.Sprite(this.glowSpriteMat);
+          this.glowSprite.position.set(0, 1.35, 0);
+          this.glowSprite.scale.setScalar(2.2);
+          this.root.add(this.glowSprite);
+        }
+
         this.root.traverse((obj) => {
           if (obj.isMesh) {
             obj.castShadow = quality.shadows;
@@ -992,6 +1062,36 @@
         let crit = false;
         let counter = false;
 
+        const beatInfo = getBeatInfo();
+        let beatBoost = false;
+        let beatNear = false;
+
+        if (beatInfo.onBeat) {
+          beatBoost = true;
+          this.beatCombo++;
+
+          if (this.isPlayer) {
+            game.beatBonusTimer = 0.75;
+            game.beatBonusText =
+              this.beatCombo > 1
+                ? `ON BEAT x${this.beatCombo}`
+                : 'ON BEAT';
+          }
+
+          if (type !== 'special') {
+            this.addSpecial(5);
+          }
+
+          spawnSpark(this.chestPos(), 0x7dffd4, 8);
+          playBeatTick();
+        } else if (beatInfo.near) {
+          beatNear = true;
+        } else {
+          this.beatCombo = 0;
+        }
+
+        const comboBonus = 1 + Math.min(0.20, Math.max(0, this.beatCombo - 1) * 0.02);
+
         if (this.counterTimer > 0) {
           counter = true;
           damage *= 1.35;
@@ -1002,6 +1102,12 @@
         if (Math.random() < 0.12) {
           crit = true;
           damage *= 1.30;
+        }
+
+        if (beatBoost) {
+          damage *= 1.22 * comboBonus;
+        } else if (beatNear) {
+          damage *= 1.08;
         }
 
         damage = Math.max(1, Math.round(damage));
@@ -1018,6 +1124,8 @@
           isActive: false,
           crit,
           counter,
+          beatBoost,
+          beatNear,
           ...base,
           damage,
           chip,
@@ -1027,7 +1135,7 @@
         if (type === 'special') {
           this.special = 0;
           spawnRing(this.pos, this.accent, 2.2);
-          screenFlash('#ffffff', 0.06);
+          screenFlash('#ffffff', 0.05);
           playSpecialStart();
         } else {
           playSwing(type);
@@ -1106,6 +1214,12 @@
               1.0;
 
             this.tryMove(this.forward.clone().multiplyScalar(step * dt));
+          }
+
+          if (attack.type === 'special' && attack.isActive && Math.random() < dt * 25) {
+            const p = this.chestPos();
+            p.addScaledVector(this.forward, 0.65);
+            spawnSpark(p, this.accent, 1);
           }
 
           if (attack.time >= attack.total) {
@@ -1195,12 +1309,28 @@
         if (this.state === 'ko') return;
 
         const impact = this.chestPos();
+        const beatInfo = getBeatInfo();
 
         if (blocked) {
-          this.health = Math.max(0, this.health - attack.chip);
+          let chip = attack.chip;
+
+          if (beatInfo.near) {
+            chip = Math.max(0, Math.round(chip * 0.5));
+            this.counterTimer = 0.72;
+            this.addSpecial(8);
+            spawnRing(this.pos, 0x7dffd4, 1.7);
+
+            if (this.isPlayer) {
+              game.beatBonusTimer = 0.55;
+              game.beatBonusText = 'BEAT BLOCK';
+            }
+          } else {
+            this.counterTimer = 0.45;
+          }
+
+          this.health = Math.max(0, this.health - chip);
           this.setState('blockstun');
           this.blockstun = attack.blockstun;
-          this.counterTimer = 0.45;
 
           this.pos.addScaledVector(attacker.forward, attack.knockback * 0.55);
           this.clampArena();
@@ -1213,10 +1343,14 @@
 
           if (attack.type === 'special') {
             spawnRing(this.pos, attacker.accent, 3.2);
-            screenFlash('#66ccff', 0.08);
+            screenFlash('#66ccff', 0.06);
             game.shake += 0.8;
           }
         } else {
+          if (this.isPlayer) {
+            this.beatCombo = 0;
+          }
+
           this.health = Math.max(0, this.health - attack.damage);
           this.setState('hitstun');
           this.hitstun = attack.hitstun;
@@ -1237,18 +1371,24 @@
 
           if (attack.crit) {
             spawnSpark(impact, 0xffd700, 18);
-            screenFlash('#ffd700', 0.09);
+            screenFlash('#ffd700', 0.07);
             game.shake += 0.45;
           }
 
           if (attack.counter) {
-            screenFlash('#66ccff', 0.07);
+            screenFlash('#66ccff', 0.06);
+          }
+
+          if (attack.beatBoost) {
+            spawnSpark(impact, 0x7dffd4, 16);
+            screenFlash('#7dffd4', 0.05);
+            game.shake += 0.2;
           }
 
           if (attack.type === 'special') {
             spawnRing(this.pos, attacker.accent, 5.0);
             spawnSpark(impact, attacker.accent, 20);
-            screenFlash('#' + attacker.accent.toString(16).padStart(6, '0'), 0.12);
+            screenFlash('#' + attacker.accent.toString(16).padStart(6, '0'), 0.10);
             game.fovPunch = Math.min(14, game.fovPunch + 6);
             game.shake += 1.2;
           }
@@ -1268,7 +1408,7 @@
 
           spawnSpark(impact, 0xff3355, 30);
           spawnRing(this.pos, attacker.accent, 6.0);
-          screenFlash('#ff3355', 0.16);
+          screenFlash('#ff3355', 0.14);
 
           game.shake += 1.5;
           game.fovPunch = Math.min(16, game.fovPunch + 10);
@@ -1442,6 +1582,25 @@
 
           this.auraMat.opacity += (targetAura - this.auraMat.opacity) * k;
         }
+
+        if (this.glowSpriteMat) {
+          let targetSprite = 0.12;
+
+          if (isSpecialAttack && this.attack.isActive) {
+            targetSprite = 0.46;
+          } else if (isSpecialAttack) {
+            targetSprite = 0.30;
+          } else if (this.special >= 100) {
+            targetSprite = 0.26;
+          } else if (this.inRage) {
+            targetSprite = 0.20;
+          }
+
+          this.glowSpriteMat.opacity +=
+            (targetSprite - this.glowSpriteMat.opacity) * k;
+
+          this.glowSprite.scale.setScalar(2.1 + game.beatPulse * 0.35);
+        }
       }
     }
 
@@ -1592,13 +1751,15 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.12;
+      renderer.toneMappingExposure = 1.18;
       renderer.shadowMap.enabled = quality.shadows;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
       document.body.appendChild(renderer.domElement);
 
       setQuality(initialQuality);
+
+      glowTexture = makeGlowTexture();
 
       buildLights();
       buildArena();
@@ -1624,6 +1785,7 @@
         quality.lights = false;
         quality.dust = false;
         quality.stars = false;
+        quality.glowSprites = false;
         quality.maxSparks = 50;
         quality.maxRings = 10;
       } else if (level === 1) {
@@ -1632,6 +1794,7 @@
         quality.lights = false;
         quality.dust = true;
         quality.stars = true;
+        quality.glowSprites = true;
         quality.maxSparks = 90;
         quality.maxRings = 18;
       } else {
@@ -1640,6 +1803,7 @@
         quality.lights = true;
         quality.dust = true;
         quality.stars = true;
+        quality.glowSprites = true;
         quality.maxSparks = 160;
         quality.maxRings = 26;
       }
@@ -1663,10 +1827,36 @@
       }
 
       [p1, p2].forEach((f) => {
-        if (f && f.glowLight) {
+        if (!f) return;
+
+        if (f.glowLight) {
           f.glowLight.visible = quality.lights;
         }
+
+        if (f.glowSprite) {
+          f.glowSprite.visible = quality.glowSprites;
+        }
       });
+    }
+
+    function makeGlowTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+
+      const ctx = canvas.getContext('2d');
+      const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+
+      g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.28, 'rgba(255,255,255,.55)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 128, 128);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      return texture;
     }
 
     function makeBackgroundTexture() {
@@ -1675,8 +1865,8 @@
       canvas.height = 512;
 
       const ctx = canvas.getContext('2d');
-      const g = ctx.createLinearGradient(0, 0, 0, 512);
 
+      const g = ctx.createLinearGradient(0, 0, 0, 512);
       g.addColorStop(0, '#0b1530');
       g.addColorStop(0.45, '#071022');
       g.addColorStop(1, '#02040a');
@@ -1684,11 +1874,23 @@
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, 512, 512);
 
-      for (let i = 0; i < 180; i++) {
+      function blob(x, y, r, color) {
+        const rg = ctx.createRadialGradient(x, y, 0, x, y, r);
+        rg.addColorStop(0, color);
+        rg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = rg;
+        ctx.fillRect(0, 0, 512, 512);
+      }
+
+      blob(120, 110, 160, 'rgba(40,90,220,.16)');
+      blob(400, 160, 180, 'rgba(255,110,60,.10)');
+      blob(260, 420, 220, 'rgba(0,220,255,.08)');
+
+      for (let i = 0; i < 220; i++) {
         ctx.fillStyle = `rgba(255,255,255,${0.03 + Math.random() * 0.12})`;
         ctx.fillRect(
           Math.random() * 512,
-          Math.random() * 260,
+          Math.random() * 300,
           Math.random() * 2,
           Math.random() * 2
         );
@@ -1810,6 +2012,13 @@
       gridMat = grid.material;
       scene.add(grid);
 
+      const polar = new THREE.PolarGridHelper(ARENA_RADIUS + 0.45, 16, 8, 64, 0x225577, 0x112233);
+      polar.position.y = 0.012;
+      polar.material.transparent = true;
+      polar.material.opacity = 0.22;
+      polarMat = polar.material;
+      scene.add(polar);
+
       ringMat = new THREE.MeshBasicMaterial({
         color: 0x37d5ff,
         transparent: true,
@@ -1836,6 +2045,23 @@
       inner.rotation.x = -Math.PI / 2;
       inner.position.y = 0.02;
       scene.add(inner);
+
+      centerGlowMat = new THREE.MeshBasicMaterial({
+        color: 0x2288ff,
+        transparent: true,
+        opacity: 0.08,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+
+      const centerGlow = new THREE.Mesh(
+        new THREE.CircleGeometry(1.18, 48),
+        centerGlowMat
+      );
+      centerGlow.rotation.x = -Math.PI / 2;
+      centerGlow.position.y = 0.018;
+      scene.add(centerGlow);
 
       for (let i = 0; i < 10; i++) {
         const angle = (i / 10) * Math.PI * 2;
@@ -2060,7 +2286,7 @@
           e.preventDefault();
           el.setPointerCapture(e.pointerId);
           virtualJust[action] = true;
-          vibrate(12);
+          vibrate(14);
         });
 
         el.addEventListener('pointerup', (e) => {
@@ -2113,7 +2339,7 @@
           const now = audioCtx.currentTime;
           music.gain.gain.cancelScheduledValues(now);
           music.gain.gain.setValueAtTime(music.gain.gain.value, now);
-          music.gain.gain.linearRampToValueAtTime(game.musicOn ? 0.16 : 0, now + 0.15);
+          music.gain.gain.linearRampToValueAtTime(game.musicOn ? 0.18 : 0, now + 0.15);
         }
       }
 
@@ -2234,7 +2460,26 @@
     function update(dt, rawDt) {
       game.time += rawDt;
       game.shake = Math.max(0, game.shake - rawDt * 5);
-      game.beatPulse *= Math.exp(-6 * rawDt);
+
+      const beatInfo = getBeatInfo();
+
+      if (music.playing) {
+        game.beatPulse = clamp(1 - beatInfo.dist / 0.18, 0, 1);
+      } else {
+        game.beatPulse = 0.35 + Math.sin(game.time * 2.5) * 0.15;
+      }
+
+      game.beatBonusTimer = Math.max(0, game.beatBonusTimer - rawDt);
+
+      beatDotEl.style.transform = `scale(${1 + game.beatPulse * 0.95})`;
+      beatDotEl.style.opacity = `${0.45 + game.beatPulse * 0.55}`;
+
+      if (game.beatBonusTimer > 0) {
+        beatBonusEl.style.opacity = '1';
+        beatBonusEl.textContent = game.beatBonusText || 'ON BEAT';
+      } else {
+        beatBonusEl.style.opacity = '0';
+      }
 
       if (game.state === 'select') {
         p1.update(dt, emptyInput(), p2);
@@ -2305,6 +2550,33 @@
       updateEffects(dt);
       updateCamera(rawDt);
       updateUI();
+    }
+
+    function getBeatInfo() {
+      if (!audioCtx || !music.playing || !music.startTime) {
+        return { onBeat: false, near: false, dist: 1, phase: 0 };
+      }
+
+      const t = audioCtx.currentTime - music.startTime;
+      if (t < -0.2) {
+        return { onBeat: false, near: false, dist: 1, phase: 0 };
+      }
+
+      const beat = music.beatDuration;
+      let offset = t % beat;
+
+      if (offset < 0) {
+        offset += beat;
+      }
+
+      const dist = Math.min(offset, beat - offset);
+
+      return {
+        onBeat: dist <= 0.075,
+        near: dist <= 0.14,
+        dist,
+        phase: offset / beat
+      };
     }
 
     function getPlayerInput() {
@@ -2413,6 +2685,8 @@
 
     function resetRound() {
       game.timer = 60;
+      game.beatBonusTimer = 0;
+      game.beatBonusText = 'ON BEAT';
 
       const fighters = [p1, p2];
 
@@ -2420,6 +2694,7 @@
         f.health = f.maxHealth;
         f.special = 0;
         f.counterTimer = 0;
+        f.beatCombo = 0;
 
         f.state = 'idle';
         f.stateTime = 0;
@@ -2498,7 +2773,7 @@
         : `${perfect ? 'PERFEKT! ' : ''}${winnerFighter.name} GEWINNT DIE RUNDE`;
 
       if (perfect) {
-        screenFlash('#ffd700', 0.12);
+        screenFlash('#ffd700', 0.10);
       }
 
       showMessage(main, sub, 2.4);
@@ -2761,17 +3036,25 @@
       if (ringMat) {
         ringMat.opacity =
           0.50 +
-          game.beatPulse * 0.35 +
-          Math.sin(game.time * 2.4) * 0.08;
+          game.beatPulse * 0.38 +
+          Math.sin(game.time * 2.4) * 0.06;
       }
 
       if (ringMesh) {
-        const s = 1 + game.beatPulse * 0.02;
+        const s = 1 + game.beatPulse * 0.025;
         ringMesh.scale.setScalar(s);
       }
 
       if (gridMat) {
-        gridMat.opacity = 0.18 + game.beatPulse * 0.14;
+        gridMat.opacity = 0.16 + game.beatPulse * 0.16;
+      }
+
+      if (polarMat) {
+        polarMat.opacity = 0.13 + game.beatPulse * 0.18;
+      }
+
+      if (centerGlowMat) {
+        centerGlowMat.opacity = 0.06 + game.beatPulse * 0.08;
       }
     }
 
@@ -2792,12 +3075,13 @@
       if (!audioCtx || music.playing) return;
 
       music.gain = audioCtx.createGain();
-      music.gain.gain.value = game.musicOn ? 0.16 : 0;
+      music.gain.gain.value = game.musicOn ? 0.18 : 0;
       music.gain.connect(audioCtx.destination);
 
       music.playing = true;
       music.step = 0;
-      music.nextTime = audioCtx.currentTime + 0.1;
+      music.startTime = audioCtx.currentTime + 0.1;
+      music.nextTime = music.startTime;
 
       music.timer = setInterval(scheduleMusic, 80);
 
@@ -2807,7 +3091,7 @@
     function scheduleMusic() {
       if (!audioCtx || !music.playing) return;
 
-      const stepDur = 60 / 104 / 4;
+      const stepDur = 60 / BPM / 4;
 
       while (music.nextTime < audioCtx.currentTime + 0.15) {
         playMusicStep(music.step, music.nextTime, stepDur);
@@ -2837,19 +3121,19 @@
       }
 
       if (step % 4 === 2) {
-        playMusicHat(time, 0.015);
+        playMusicHat(time, 0.014);
       }
 
       const arpPattern = [0, 7, 12, 15, 12, 7, 3, 10];
 
       if (step % 2 === 0) {
         const note = root + 12 + arpPattern[(step / 2) % arpPattern.length];
-        playMusicTone(midiToFreq(note), time, dur * 1.5, 'triangle', 0.035, 1800);
+        playMusicTone(midiToFreq(note), time, dur * 1.5, 'triangle', 0.032, 1800);
       }
 
       if (step % 16 === 0) {
         chordTypes[bar].forEach((off) => {
-          playMusicTone(midiToFreq(root + 12 + off), time, dur * 14, 'sawtooth', 0.014, 800);
+          playMusicTone(midiToFreq(root + 12 + off), time, dur * 14, 'sawtooth', 0.013, 800);
         });
       }
     }
@@ -2882,8 +3166,6 @@
     function playMusicKick(time) {
       if (!audioCtx || !music.gain) return;
 
-      game.beatPulse = Math.min(1, game.beatPulse + 0.55);
-
       const osc = audioCtx.createOscillator();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(130, time);
@@ -2905,7 +3187,7 @@
       src.buffer = getNoiseBuffer();
 
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(0.06, time);
+      gain.gain.setValueAtTime(0.055, time);
       gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.09);
 
       const filter = audioCtx.createBiquadFilter();
@@ -2924,7 +3206,7 @@
       osc.frequency.setValueAtTime(190, time);
       osc.frequency.exponentialRampToValueAtTime(120, time + 0.06);
 
-      oscGain.gain.setValueAtTime(0.035, time);
+      oscGain.gain.setValueAtTime(0.030, time);
       oscGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.07);
 
       osc.connect(oscGain).connect(music.gain);
@@ -2978,7 +3260,7 @@
       osc.frequency.setValueAtTime(type === 'kick' ? 170 : 250, now);
       osc.frequency.exponentialRampToValueAtTime(type === 'kick' ? 60 : 90, now + 0.09);
 
-      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.setValueAtTime(0.025, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.10);
 
       osc.connect(gain).connect(audioCtx.destination);
@@ -3009,7 +3291,7 @@
       src.buffer = buffer;
 
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(Math.min(0.5, 0.22 + power * 0.15), now);
+      gain.gain.setValueAtTime(Math.min(0.26, 0.10 + power * 0.08), now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + len);
 
       const filter = audioCtx.createBiquadFilter();
@@ -3026,7 +3308,7 @@
       osc.frequency.setValueAtTime(160 + power * 30, now);
       osc.frequency.exponentialRampToValueAtTime(45, now + 0.13);
 
-      oscGain.gain.setValueAtTime(0.26, now);
+      oscGain.gain.setValueAtTime(0.12, now);
       oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
 
       osc.connect(oscGain).connect(audioCtx.destination);
@@ -3046,7 +3328,7 @@
       osc.frequency.setValueAtTime(880, now);
       osc.frequency.exponentialRampToValueAtTime(320, now + 0.07);
 
-      gain.gain.setValueAtTime(0.14, now);
+      gain.gain.setValueAtTime(0.06, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
 
       osc.connect(gain).connect(audioCtx.destination);
@@ -3057,7 +3339,7 @@
     function playKO() {
       if (!audioCtx) return;
 
-      playHit(2.4);
+      playHit(1.6);
 
       const now = audioCtx.currentTime;
 
@@ -3068,7 +3350,7 @@
       osc.frequency.setValueAtTime(120, now);
       osc.frequency.exponentialRampToValueAtTime(28, now + 0.65);
 
-      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.setValueAtTime(0.10, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.70);
 
       osc.connect(gain).connect(audioCtx.destination);
@@ -3088,7 +3370,7 @@
       osc.frequency.setValueAtTime(120, now);
       osc.frequency.exponentialRampToValueAtTime(620, now + 0.18);
 
-      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.setValueAtTime(0.035, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
 
       osc.connect(gain).connect(audioCtx.destination);
@@ -3102,12 +3384,31 @@
       osc2.frequency.setValueAtTime(60, now);
       osc2.frequency.exponentialRampToValueAtTime(180, now + 0.16);
 
-      gain2.gain.setValueAtTime(0.05, now);
+      gain2.gain.setValueAtTime(0.025, now);
       gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.20);
 
       osc2.connect(gain2).connect(audioCtx.destination);
       osc2.start(now);
       osc2.stop(now + 0.22);
+    }
+
+    function playBeatTick() {
+      if (!audioCtx) return;
+
+      const now = audioCtx.currentTime;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1250, now);
+
+      gain.gain.setValueAtTime(0.02, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.06);
     }
 
     function onResize() {
