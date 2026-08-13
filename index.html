@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
-  <title>Iron Fist Arena - Dash Push Whole Code</title>
+  <title>Iron Fist Arena - Guard Break + 2P Push</title>
   <style>
     :root {
       --p1: #31b8ff;
@@ -171,6 +171,36 @@
 
     .special-fill.full {
       box-shadow: 0 0 14px #ffd34d;
+    }
+
+    .guard-wrap {
+      height: 6px;
+      border: 2px solid rgba(255,255,255,.25);
+      background: rgba(0,0,0,.5);
+      margin-top: 4px;
+      transform: skewX(-18deg);
+      overflow: hidden;
+    }
+
+    .right .guard-wrap {
+      transform: skewX(18deg);
+    }
+
+    .guard-fill {
+      height: 100%;
+      width: 100%;
+      transform-origin: left center;
+      background: linear-gradient(90deg, #9fffb0, #2eff7b);
+      transition: transform .08s linear;
+    }
+
+    #p2guard {
+      transform-origin: right center;
+    }
+
+    .guard-fill.broken {
+      background: linear-gradient(90deg, #ff5b6b, #ff2d55);
+      animation: pulse 0.5s infinite;
     }
 
     .rounds {
@@ -637,6 +667,10 @@
         height: 6px;
       }
 
+      .guard-wrap {
+        height: 5px;
+      }
+
       #timer {
         font-size: 20px;
         min-width: 54px;
@@ -680,6 +714,9 @@
         <div class="special-wrap">
           <div id="p1special" class="special-fill"></div>
         </div>
+        <div class="guard-wrap">
+          <div id="p1guard" class="guard-fill"></div>
+        </div>
         <div class="rounds" id="p1rounds"><span></span><span></span></div>
       </div>
 
@@ -696,6 +733,9 @@
         <div class="special-wrap">
           <div id="p2special" class="special-fill"></div>
         </div>
+        <div class="guard-wrap">
+          <div id="p2guard" class="guard-fill"></div>
+        </div>
         <div class="rounds" id="p2rounds"><span></span><span></span></div>
       </div>
     </div>
@@ -705,9 +745,9 @@
     <div id="combo2" class="combo"></div>
 
     <div id="controls">
-      WASD: Bewegen / Sidestep • J: Punch-Combo • K: Kick-Combo<br>
-      L: Blocken / Parry • R: Special voll, sonst Dash (15 Meter)<br>
-      Im Dash: J = Dash Punch, K = Dash Kick • Beat-Dash gibt Meter zurück
+      P1: WASD + J/K/L/R • P2: Arrows + , . / M (wenn 2P aktiv)<br>
+      R: Special voll, sonst Dash • R während Attack: Dash Cancel<br>
+      Guard Break: Blocken verbraucht Guard • Beat-Block spart Guard
     </div>
   </div>
 
@@ -725,6 +765,7 @@
   </div>
 
   <div id="sys">
+    <button id="btnMode" class="sysBtn" title="1P / 2P">🎮</button>
     <button id="btnMusic" class="sysBtn" title="Musik an/aus">🎵</button>
     <button id="btnGyro" class="sysBtn" title="Gyro an/aus">🌀</button>
     <button id="btnChar" class="sysBtn" title="Charakter wechseln">🎭</button>
@@ -765,8 +806,9 @@
     <p>Wähle deinen Kämpfer</p>
     <div id="charCards" class="cards"></div>
     <div class="panel">
-      <strong>Dash Push</strong>: Dash, Dash Attacks, Beat Dash, Combos, Parry, Special Cancel<br>
-      Desktop: WASD • J/K mehrfach = Combos • L Block • R Special/Dash<br>
+      <strong>Guard Break + 2P Push</strong>: Guard-Bar, Guard Break, Dash Cancel, lokaler 2P-Modus<br>
+      P1: WASD • J Punch • K Kick • L Block • R Special/Dash<br>
+      P2: Arrows • , Punch • . Kick • / Block • M Special<br>
       Mobile: linker Joystick • große Buttons • Smart Zoom + Touch-Assist
     </div>
   </div>
@@ -1012,6 +1054,7 @@
       modifier: 'NORMAL',
       roundColor: 0x37d5ff,
       lastRoundWinner: -1,
+      twoPlayer: false,
       gyroEnabled: false,
       camTargetX: 0,
       camTargetY: 0,
@@ -1025,6 +1068,8 @@
     const p2HealthEl = document.getElementById('p2health');
     const p1SpecialEl = document.getElementById('p1special');
     const p2SpecialEl = document.getElementById('p2special');
+    const p1GuardEl = document.getElementById('p1guard');
+    const p2GuardEl = document.getElementById('p2guard');
     const p1NameEl = document.getElementById('p1name');
     const p2NameEl = document.getElementById('p2name');
     const timerEl = document.getElementById('timer');
@@ -1040,6 +1085,7 @@
     const beatBonusEl = document.getElementById('beatBonus');
     const popupsEl = document.getElementById('popups');
 
+    const btnMode = document.getElementById('btnMode');
     const btnMusic = document.getElementById('btnMusic');
     const btnGyro = document.getElementById('btnGyro');
     const btnChar = document.getElementById('btnChar');
@@ -1084,6 +1130,11 @@
         this.dashCooldown = 0;
         this.dashTime = 0;
         this.dashDir = new THREE.Vector3();
+
+        this.guard = 100;
+        this.guardBroken = false;
+        this.guardBreakTimer = 0;
+        this.guardRegenDelay = 0;
 
         this.state = 'idle';
         this.stateTime = 0;
@@ -1725,6 +1776,19 @@
           this.dashCooldown -= dt;
         }
 
+        if (
+          this.state !== 'block' &&
+          this.state !== 'blockstun' &&
+          this.state !== 'guardbreak' &&
+          this.state !== 'ko'
+        ) {
+          if (this.guardRegenDelay > 0) {
+            this.guardRegenDelay -= dt;
+          } else {
+            this.guard = Math.min(100, this.guard + 8 * dt);
+          }
+        }
+
         if (this.state !== 'ko') {
           const wasSpecial = this.special;
 
@@ -1785,6 +1849,18 @@
           return;
         }
 
+        if (this.state === 'guardbreak') {
+          this.guardBreakTimer -= dt;
+
+          if (this.guardBreakTimer <= 0) {
+            this.guardBroken = false;
+            this.guard = 45;
+            this.setState('idle');
+          }
+
+          return;
+        }
+
         if (this.state === 'dash') {
           if (input.special && this.special >= 100) {
             this.startAttack('special');
@@ -1830,13 +1906,19 @@
 
           if (
             attack.time > attack.startup + attack.active &&
-            input.special &&
-            this.special >= 100
+            input.special
           ) {
-            this.attack = null;
-            this.queuedAttack = null;
-            this.startAttack('special');
-            return;
+            if (this.special >= 100) {
+              this.attack = null;
+              this.queuedAttack = null;
+              this.startAttack('special');
+              return;
+            } else if (this.special >= 15) {
+              this.attack = null;
+              this.queuedAttack = null;
+              this.startDash(input);
+              return;
+            }
           }
 
           if (attack.time > attack.startup + attack.active * 0.4) {
@@ -2071,12 +2153,14 @@
               spawnRing(this.pos, 0xffd700, 2.8);
               screenFlash('#ffd700', 0.08);
               this.addSpecial(35);
+              this.guard = Math.min(100, this.guard + 25);
               attacker.hitstun = 0.50;
             } else {
               spawnDamageNumber(impact, 'PARRY', '#ffffff', true);
               spawnRing(this.pos, 0xffffff, 2.4);
               screenFlash('#ffffff', 0.07);
               this.addSpecial(25);
+              this.guard = Math.min(100, this.guard + 15);
               attacker.hitstun = 0.35;
             }
 
@@ -2099,6 +2183,38 @@
               game.beatBonusTimer = 0.75;
               game.beatBonusText = perfectParry ? 'PERFECT PARRY!' : 'PARRY!';
             }
+
+            return;
+          }
+
+          let guardDamage = attack.damage * (attack.type === 'special' ? 1.4 : 0.8);
+
+          if (beatInfo.near) {
+            guardDamage *= 0.5;
+          }
+
+          this.guard = Math.max(0, this.guard - guardDamage);
+          this.guardRegenDelay = 1.0;
+
+          if (this.guard <= 0 && !this.guardBroken) {
+            this.guardBroken = true;
+            this.guardBreakTimer = 1.1;
+            this.setState('guardbreak');
+
+            this.pos.addScaledVector(attacker.forward, attack.knockback * 0.8);
+            this.clampArena();
+
+            attacker.addSpecial(25);
+            attacker.combo++;
+            attacker.comboTimer = 1.25;
+
+            spawnDamageNumber(impact, 'GUARD BREAK', '#ff5b6b', true);
+            spawnRing(this.pos, 0xff5b6b, 3.5);
+            screenFlash('#ff5b6b', 0.09);
+            playHit(1.2);
+
+            game.shake += 0.8;
+            game.hitstop = Math.max(game.hitstop, 0.08);
 
             return;
           }
@@ -2315,6 +2431,14 @@
           torsoX = 0.16;
           legLX = -0.16;
           legRX = 0.22;
+        } else if (this.state === 'guardbreak') {
+          torsoX = -0.45;
+          armLX = -0.90;
+          armRX = -0.90;
+          armLZ = 0.70;
+          armRZ = -0.70;
+          legLX = -0.30;
+          legRX = 0.35;
         } else if (this.state === 'hitstun') {
           torsoX = -0.36;
           armLX = -0.60;
@@ -2609,7 +2733,11 @@
             } else if (r < 0.62) {
               i.attackType = 'dashKick';
             } else if (r < 0.70) {
-              i.block = true;
+              if (this.f.guard > 35) {
+                i.block = true;
+              } else {
+                i.moveY = -1;
+              }
             } else if (r < 0.84) {
               i.moveY = -1;
             } else {
@@ -2674,6 +2802,23 @@
           }
         }
 
+        if (
+          this.f.canAct &&
+          this.o.guard < 35 &&
+          dist < 2.5 &&
+          Math.random() < dt * 2.0
+        ) {
+          i.block = false;
+          i.moveX = 0;
+          i.moveY = 0;
+
+          if (Math.random() < 0.5) {
+            i.attackType = 'dashPunch';
+          } else {
+            i.attackType = 'dashKick';
+          }
+        }
+
         if (i.block && Math.random() < dt * 1.7) {
           i.block = false;
         }
@@ -2725,7 +2870,7 @@
       setupMiscListeners();
 
       setQuality(quality.level);
-
+      updateModeButton();
       updateUI();
       updateSysButtons();
     }
@@ -2969,7 +3114,7 @@
       p2.health = p2.maxHealth;
 
       p1NameEl.textContent = p1.name;
-      p2NameEl.textContent = p2.name;
+      p2NameEl.textContent = game.twoPlayer ? 'PLAYER 2' : 'CPU';
 
       ai = new AI(p2, p1);
     }
@@ -3298,6 +3443,7 @@
     }
 
     function setupSystemButtons() {
+      btnMode.addEventListener('click', toggleTwoPlayer);
       btnMusic.addEventListener('click', toggleMusic);
       btnGyro.addEventListener('click', toggleGyro);
       btnChar.addEventListener('click', () => {
@@ -3319,7 +3465,9 @@
         if ([
           'KeyW', 'KeyA', 'KeyS', 'KeyD',
           'KeyJ', 'KeyK', 'KeyL', 'KeyR',
-          'Space', 'Enter', 'KeyC'
+          'Space', 'Enter', 'KeyC',
+          'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+          'Comma', 'Period', 'Slash', 'KeyM'
         ].includes(e.code)) {
           e.preventDefault();
         }
@@ -3463,6 +3611,20 @@
     function vibrate(ms) {
       if (navigator.vibrate) {
         navigator.vibrate(ms);
+      }
+    }
+
+    function toggleTwoPlayer() {
+      game.twoPlayer = !game.twoPlayer;
+      updateModeButton();
+    }
+
+    function updateModeButton() {
+      if (!btnMode) return;
+      btnMode.textContent = game.twoPlayer ? '👥' : '🎮';
+      btnMode.classList.toggle('active', game.twoPlayer);
+      if (p2NameEl) {
+        p2NameEl.textContent = game.twoPlayer ? 'PLAYER 2' : 'CPU';
       }
     }
 
@@ -3713,7 +3875,7 @@
         game.timer -= dt;
 
         const input1 = getPlayerInput();
-        const input2 = ai.update(dt);
+        const input2 = game.twoPlayer ? getPlayer2Input() : ai.update(dt);
 
         p1.update(dt, input1, p2);
         p2.update(dt, input2, p1);
@@ -3845,6 +4007,21 @@
         kick: just.KeyK || virtualJust.kick,
         special: just.KeyR || virtualJust.special,
         block: keys.KeyL || virtualState.block,
+        attackType: null
+      };
+    }
+
+    function getPlayer2Input() {
+      const moveX = (keys.ArrowRight ? 1 : 0) - (keys.ArrowLeft ? 1 : 0);
+      const moveY = (keys.ArrowUp ? 1 : 0) - (keys.ArrowDown ? 1 : 0);
+
+      return {
+        moveX,
+        moveY,
+        punch: just.Comma,
+        kick: just.Period,
+        special: just.KeyM,
+        block: keys.Slash,
         attackType: null
       };
     }
@@ -3993,6 +4170,11 @@
         f.dashCooldown = 0;
         f.dashTime = 0;
         f.dashDir.set(0, 0, 0);
+
+        f.guard = 100;
+        f.guardBroken = false;
+        f.guardBreakTimer = 0;
+        f.guardRegenDelay = 0;
 
         f.state = 'idle';
         f.stateTime = 0;
@@ -4357,6 +4539,12 @@
 
       p1SpecialEl.classList.toggle('full', p1.special >= 100);
       p2SpecialEl.classList.toggle('full', p2.special >= 100);
+
+      p1GuardEl.style.transform = `scaleX(${clamp01(p1.guard / 100)})`;
+      p2GuardEl.style.transform = `scaleX(${clamp01(p2.guard / 100)})`;
+
+      p1GuardEl.classList.toggle('broken', p1.guardBroken);
+      p2GuardEl.classList.toggle('broken', p2.guardBroken);
 
       btnSpecialEl.classList.toggle('ready', p1.special >= 100);
 
