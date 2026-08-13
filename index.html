@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Iron Fist Arena - Whole Code Push</title>
+<title>Iron Fist Arena - Full Push</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:Arial,Helvetica,sans-serif;touch-action:none;overscroll-behavior:none}
@@ -101,6 +101,7 @@ canvas{display:block}
   <button id="btnView" class="sysBtn">👁</button>
   <button id="btnBoss" class="sysBtn">👹</button>
   <button id="btnMode" class="sysBtn">🎮</button>
+  <button id="btnTrain" class="sysBtn">🧪</button>
   <button id="btnMusic" class="sysBtn">🎵</button>
   <button id="btnChar" class="sysBtn">🎭</button>
   <button id="btnFull" class="sysBtn">⛶</button>
@@ -166,7 +167,7 @@ const game={
   state:'select',round:1,wins:[0,0],timer:60,stateTimer:0,time:0,hitstop:0,shake:0,fovPunch:0,
   beatPulse:0,barPulse:0,lastBarPulse:0,beatBonusTimer:0,beatBonusText:'ON BEAT',
   musicOn:true,musicIntensity:.15,fever:false,wasFever:false,modifier:'NORMAL',
-  lastRoundWinner:-1,bossMode:false,twoPlayer:false,lowObstruction:isTouchDevice,
+  lastRoundWinner:-1,bossMode:false,twoPlayer:false,training:false,timeScale:1,slowmoTimer:0,lowObstruction:isTouchDevice,
   camTargetX:0,camTargetY:0,camX:0,camY:0
 };
 
@@ -189,6 +190,7 @@ const charCardsEl=document.getElementById('charCards');
 const btnView=document.getElementById('btnView');
 const btnBoss=document.getElementById('btnBoss');
 const btnMode=document.getElementById('btnMode');
+const btnTrain=document.getElementById('btnTrain');
 const btnMusic=document.getElementById('btnMusic');
 const btnChar=document.getElementById('btnChar');
 const btnFull=document.getElementById('btnFull');
@@ -327,8 +329,9 @@ class Fighter{
     if(this.state==='ko'){this.koProgress=Math.min(1,this.koProgress+dt*2.3);this.visual.rotation.x=-this.koProgress*Math.PI/2.15;this.visual.position.y=this.koProgress*.18;return}
     if(this.state==='hitstun'){this.hitstun-=dt;if(this.hitstun<=0)this.setState('idle');return}
     if(this.state==='blockstun'){
-      if(input.special&&this.special>=30){
-        this.special-=30;this.guard=Math.min(100,this.guard+25);this.counterTimer=.8;this.setState('idle');
+      const burstCost=game.fever?20:30;
+      if(input.special&&this.special>=burstCost){
+        this.special-=burstCost;this.guard=Math.min(100,this.guard+25);this.counterTimer=.8;this.setState('idle');
         opponent.attack=null;opponent.setState('hitstun');opponent.hitstun=.3;
         opponent.pos.addScaledVector(this.forward,.7);opponent.clampArena();
         spawnRing(this.pos,0x7dffd4,2.5);screenFlash('#7dffd4',.05);
@@ -425,6 +428,7 @@ class Fighter{
         attacker.pos.addScaledVector(this.forward,b.onBeat?.6:.45);attacker.clampArena();
         spawnDamageNumber(impact,b.onBeat?'PERFECT PARRY':'PARRY',b.onBeat?'#ffd700':'#ffffff',true);
         spawnRing(this.pos,0xffffff,2.2);screenFlash('#ffffff',.05);
+        if(b.onBeat){game.timeScale=.5;game.slowmoTimer=.25;}
         return;
       }
       let guardDamage=attack.damage*(attack.type==='special'?1.4:.8);
@@ -480,6 +484,7 @@ class Fighter{
       spawnDamageNumber(impact,'K.O.','#ff3355',true);
       spawnRing(this.pos,attacker.accent,5.5);
       screenFlash('#ff3355',.12);
+      game.timeScale=.35;game.slowmoTimer=.7;
       game.hitstop=Math.max(game.hitstop,.16);game.shake+=1.5;game.fovPunch=Math.min(16,game.fovPunch+10);
     }
   }
@@ -613,6 +618,7 @@ function init(){
   updatePillarVisibility();
   updateBossButton();
   updateModeButton();
+  updateTrainButton();
   updateUI();
 }
 
@@ -679,7 +685,7 @@ function createFighters(a,b){
   p1=new Fighter(pd,true,new THREE.Vector3(-2.2,0,0));
   p2=new Fighter(cd,false,new THREE.Vector3(2.2,0,0));
   applyBossMode();
-  p1NameEl.textContent=game.twoPlayer?'PLAYER 1':'PLAYER';
+  updateModeButton();
   ai=new AI(p2,p1);
 }
 function renderCharCards(){
@@ -697,6 +703,7 @@ function setupSystemButtons(){
   btnView.onclick=toggleObstruction;
   btnBoss.onclick=toggleBossMode;
   btnMode.onclick=toggleTwoPlayer;
+  btnTrain.onclick=toggleTraining;
   btnMusic.onclick=toggleMusic;
   btnChar.onclick=()=>showCharSelect();
   btnFull.onclick=toggleFullscreen;
@@ -740,10 +747,28 @@ function updatePillarVisibility(){pillarGroups.forEach(g=>g.visible=!game.lowObs
 function toggleBossMode(){game.bossMode=!game.bossMode;applyBossMode();updateBossButton();updateModeButton()}
 function updateBossButton(){btnBoss.classList.toggle('active',game.bossMode)}
 function toggleTwoPlayer(){game.twoPlayer=!game.twoPlayer;updateModeButton()}
+function toggleTraining(){
+  game.training=!game.training;
+  updateTrainButton();
+  if(game.training){
+    resetRound();
+    game.state='fighting';
+    game.timer=99;
+    p1.health=p1.maxHealth;p2.health=p2.maxHealth;
+    p1.guard=100;p2.guard=100;
+    p1.special=100;p2.special=100;
+  }else{
+    resetRound();
+    startIntro();
+  }
+  updateModeButton();
+}
+function updateTrainButton(){if(btnTrain)btnTrain.classList.toggle('active',game.training)}
 function updateModeButton(){
   btnMode.classList.toggle('active',game.twoPlayer);
   if(p2NameEl){
-    if(game.bossMode)p2NameEl.textContent='BOSS';
+    if(game.training)p2NameEl.textContent='DUMMY';
+    else if(game.bossMode)p2NameEl.textContent='BOSS';
     else p2NameEl.textContent=game.twoPlayer?'PLAYER 2':'CPU';
   }
 }
@@ -755,14 +780,12 @@ function applyBossMode(){
     p2.health=p2.maxHealth;
     p2.damageScale=p2.baseDamageScale*1.25;
     p2.speed=p2.baseSpeed*.85;
-    p2NameEl.textContent='BOSS';
   }else{
     p2.root.scale.setScalar(p2.charId==='titan'?1.1:p2.charId==='viper'?.94:1);
     p2.maxHealth=Math.round(p2.baseMaxHealth*.88);
     p2.health=p2.maxHealth;
     p2.damageScale=p2.baseDamageScale;
     p2.speed=p2.baseSpeed;
-    p2NameEl.textContent=game.twoPlayer?'PLAYER 2':'CPU';
   }
 }
 function toggleMusic(){initAudio();if(!music.playing){game.musicOn=true;startBGM()}else{game.musicOn=!game.musicOn;if(music.gain)music.gain.gain.value=game.musicOn?.25:0}btnMusic.classList.toggle('active',game.musicOn)}
@@ -782,7 +805,7 @@ function resetRound(){
   game.timer=60;game.beatBonusTimer=0;game.beatBonusText='ON BEAT';
   chooseModifier();
   [p1,p2].forEach((f,i)=>{
-    f.health=f.maxHealth;f.special=0;f.guard=100;f.guardBroken=false;f.guardBreakTimer=0;f.guardRegenDelay=0;
+    f.health=f.maxHealth;f.special=game.training?100:0;f.guard=100;f.guardBroken=false;f.guardBreakTimer=0;f.guardRegenDelay=0;
     f.counterTimer=0;f.beatCombo=0;f.combo=0;f.comboTimer=0;
     f.attackRoute=null;f.comboStep=0;f.comboWindow=0;f.queuedAttack=null;
     f.dashCooldown=0;f.dashTime=0;f.dashDir.set(0,0,0);
@@ -793,6 +816,7 @@ function resetRound(){
   if(game.lastRoundWinner===0)p1.special=30;
   if(game.lastRoundWinner===1)p2.special=30;
   ai.reset();
+  if(game.training){game.timer=99;p1.special=100;p2.special=100;}
   updateUI();
 }
 function startIntro(){game.state='intro';game.stateTimer=0;showMessage(`RUNDE ${game.round}`,`MODUS: ${game.modifier}`,1.4)}
@@ -1088,8 +1112,10 @@ function midiToFreq(m){return 440*Math.pow(2,(m-69)/12)}
 
 function loop(now){
   requestAnimationFrame(loop);
-  const dtRaw=Math.min(.033,(now-lastTime)/1000);lastTime=now;
-  let dt=dtRaw;
+  const dtRaw=Math.min(.033,(now-lastTime)/1000);
+  lastTime=now;
+  if(game.slowmoTimer>0){game.slowmoTimer-=dtRaw;if(game.slowmoTimer<=0)game.timeScale=1;}
+  let dt=dtRaw*game.timeScale;
   if(game.hitstop>0){game.hitstop-=dtRaw;dt=0}
   update(dt,dtRaw);
   renderer.render(scene,camera);
@@ -1102,7 +1128,7 @@ function update(dt,rawDt){
   const b=getBeatInfo();
   if(music.playing){game.beatPulse=clamp(1-b.dist/.18,0,1);game.barPulse=clamp(1-b.barDist/.25,0,1)}
   else{game.beatPulse=.35+Math.sin(game.time*2.5)*.15;game.barPulse=.2+Math.sin(game.time*.6)*.1}
-  if(game.barPulse>.9&&game.lastBarPulse<=.9&&music.playing&&game.state==='fighting'){
+  if(game.barPulse>.9&&game.lastBarPulse<=.9&&music.playing&&game.state==='fighting'&&!game.training){
     if(p1)p1.addSpecial(4);if(p2)p2.addSpecial(4);
     if(p1&&p1.isPlayer){game.beatBonusTimer=Math.max(game.beatBonusTimer,.5);game.beatBonusText='BEAT DROP'}
   }
@@ -1128,11 +1154,17 @@ function update(dt,rawDt){
     if(game.stateTimer>1.45){game.state='fighting';showMessage('FIGHT!','',.65)}
   }else if(game.state==='fighting'){
     game.timer-=dt;
+    if(game.training){
+      game.timer=99;
+      p1.health=p1.maxHealth;p2.health=p2.maxHealth;
+      p1.guard=100;p2.guard=100;
+      p1.special=100;p2.special=100;
+    }
     const i1=getPlayerInput();
-    const i2=game.twoPlayer?getPlayer2Input():ai.update(dt);
+    const i2=game.training?emptyInput():(game.twoPlayer?getPlayer2Input():ai.update(dt));
     p1.update(dt,i1,p2);p2.update(dt,i2,p1);
     separateFighters();checkHit(p1,p2);checkHit(p2,p1);
-    if(p1.health<=0||p2.health<=0||game.timer<=0)endRound();
+    if(!game.training&&(p1.health<=0||p2.health<=0||game.timer<=0))endRound();
   }else if(game.state==='roundEnd'){
     game.stateTimer+=rawDt;
     p1.update(dt,emptyInput(),p2);p2.update(dt,emptyInput(),p1);
