@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
-  <title>Iron Fist Arena - Ultra Move Push</title>
+  <title>Iron Fist Arena - Dash Push Whole Code</title>
   <style>
     :root {
       --p1: #31b8ff;
@@ -705,9 +705,9 @@
     <div id="combo2" class="combo"></div>
 
     <div id="controls">
-      WASD: Bewegen / Sidestep • J: Schlag-Combo (Jab → Cross → Uppercut)<br>
-      K: Kick-Combo (Kick → Spin Kick) • L: Blocken / Parry • R: Special<br>
-      ENTER: Rematch • C: Charakter
+      WASD: Bewegen / Sidestep • J: Punch-Combo • K: Kick-Combo<br>
+      L: Blocken / Parry • R: Special voll, sonst Dash (15 Meter)<br>
+      Im Dash: J = Dash Punch, K = Dash Kick • Beat-Dash gibt Meter zurück
     </div>
   </div>
 
@@ -765,8 +765,8 @@
     <p>Wähle deinen Kämpfer</p>
     <div id="charCards" class="cards"></div>
     <div class="panel">
-      <strong>Ultra Move Push</strong>: Punch-Combo, Kick-Combo, Parry, Special Cancel, Move Names, Beat System<br>
-      Desktop: WASD • J mehrfach = Combo • K mehrfach = Combo • L Block • R Special<br>
+      <strong>Dash Push</strong>: Dash, Dash Attacks, Beat Dash, Combos, Parry, Special Cancel<br>
+      Desktop: WASD • J/K mehrfach = Combos • L Block • R Special/Dash<br>
       Mobile: linker Joystick • große Buttons • Smart Zoom + Touch-Assist
     </div>
   </div>
@@ -842,6 +842,32 @@
         hitstun: 0.52,
         blockstun: 0.25,
         knockback: 0.85
+      },
+
+      dashPunch: {
+        startup: 0.12,
+        active: 0.10,
+        recovery: 0.20,
+        damage: 11,
+        chip: 2,
+        range: 2.3,
+        lateral: 0.95,
+        hitstun: 0.38,
+        blockstun: 0.18,
+        knockback: 0.55
+      },
+
+      dashKick: {
+        startup: 0.18,
+        active: 0.12,
+        recovery: 0.26,
+        damage: 16,
+        chip: 3,
+        range: 2.5,
+        lateral: 1.05,
+        hitstun: 0.48,
+        blockstun: 0.22,
+        knockback: 0.75
       },
 
       special: {
@@ -1054,6 +1080,10 @@
         this.comboStep = 0;
         this.comboWindow = 0;
         this.queuedAttack = null;
+
+        this.dashCooldown = 0;
+        this.dashTime = 0;
+        this.dashDir = new THREE.Vector3();
 
         this.state = 'idle';
         this.stateTime = 0;
@@ -1426,6 +1456,44 @@
         this.special = Math.min(100, this.special + amount);
       }
 
+      startDash(input) {
+        if (this.state === 'ko' || this.state === 'hitstun' || this.state === 'blockstun') return;
+        if (this.dashCooldown > 0 || this.special < 15) return;
+
+        this.special -= 15;
+        this.dashCooldown = 0.80;
+        this.dashTime = 0.18;
+        this.setState('dash');
+
+        const move = new THREE.Vector3();
+
+        if (input.moveY) move.addScaledVector(this.forward, input.moveY);
+        if (input.moveX) move.addScaledVector(this.right, input.moveX);
+
+        if (move.lengthSq() < 0.001) {
+          move.copy(this.forward);
+        }
+
+        this.dashDir.copy(move).normalize();
+
+        const beatInfo = getBeatInfo();
+
+        if (beatInfo.onBeat) {
+          this.addSpecial(5);
+
+          if (this.isPlayer) {
+            game.beatBonusTimer = 0.55;
+            game.beatBonusText = 'BEAT DASH';
+          }
+
+          screenFlash('#9fe8ff', 0.04);
+          playBeatTick();
+        }
+
+        spawnRing(this.pos, 0x9fe8ff, 1.2);
+        game.fovPunch = Math.min(14, game.fovPunch + 1.5);
+      }
+
       startAttack(type) {
         const base = ATTACKS[type];
 
@@ -1581,6 +1649,13 @@
 
         const recovery = base.recovery * recoveryMul;
 
+        if (type === 'dashPunch' || type === 'dashKick') {
+          this.attackRoute = null;
+          this.comboStep = 0;
+          this.comboWindow = 0;
+          this.queuedAttack = null;
+        }
+
         this.attack = {
           type,
           time: 0,
@@ -1616,7 +1691,7 @@
           screenFlash('#ffffff', 0.05);
           playSpecialStart();
         } else {
-          playSwing(type.startsWith('kick') ? 'kick' : 'punch');
+          playSwing(type.includes('kick') ? 'kick' : 'punch');
         }
 
         this.setState('attack');
@@ -1644,6 +1719,10 @@
             this.attackRoute = null;
             this.comboStep = 0;
           }
+        }
+
+        if (this.dashCooldown > 0) {
+          this.dashCooldown -= dt;
         }
 
         if (this.state !== 'ko') {
@@ -1706,6 +1785,41 @@
           return;
         }
 
+        if (this.state === 'dash') {
+          if (input.special && this.special >= 100) {
+            this.startAttack('special');
+            return;
+          }
+
+          if (input.punch) {
+            this.startAttack('dashPunch');
+            return;
+          }
+
+          if (input.kick) {
+            this.startAttack('dashKick');
+            return;
+          }
+
+          this.dashTime -= dt;
+
+          this.pos.addScaledVector(this.dashDir, 8.5 * dt);
+          this.clampArena();
+
+          if (Math.random() < dt * 30) {
+            const p = this.chestPos();
+            p.addScaledVector(this.dashDir, -0.3);
+            spawnSpark(p, 0x9fe8ff, 1);
+          }
+
+          if (this.dashTime <= 0) {
+            this.setState('idle');
+            spawnRing(this.pos, 0x9fe8ff, 1.1);
+          }
+
+          return;
+        }
+
         if (this.state === 'attack') {
           const attack = this.attack;
           attack.time += dt;
@@ -1744,7 +1858,9 @@
           if (attack.time < attack.startup + attack.active) {
             const step =
               attack.type === 'kick' || attack.type === 'kick2' ? 1.8 :
+              attack.type === 'dashKick' ? 2.8 :
               attack.type === 'special' ? 2.4 :
+              attack.type === 'dashPunch' ? 2.6 :
               1.0;
 
             this.tryMove(this.forward.clone().multiplyScalar(step * dt));
@@ -1805,18 +1921,23 @@
           return;
         }
 
+        if (input.special) {
+          if (this.special >= 100) {
+            this.queuedAttack = null;
+            this.startAttack('special');
+            return;
+          }
+
+          this.startDash(input);
+          return;
+        }
+
         if (input.attackType && ATTACKS[input.attackType]) {
           this.attackRoute = null;
           this.comboStep = 0;
           this.comboWindow = 0;
           this.queuedAttack = null;
           this.startAttack(input.attackType);
-          return;
-        }
-
-        if (input.special && this.special >= 100) {
-          this.queuedAttack = null;
-          this.startAttack('special');
           return;
         }
 
@@ -2060,11 +2181,13 @@
           if (attack.type === 'punch2') movePrefix = 'CROSS ';
           else if (attack.type === 'punch3') movePrefix = 'UPPERCUT ';
           else if (attack.type === 'kick2') movePrefix = 'SPIN KICK ';
+          else if (attack.type === 'dashPunch') movePrefix = 'DASH PUNCH ';
+          else if (attack.type === 'dashKick') movePrefix = 'DASH KICK ';
           else if (attack.type === 'special') movePrefix = 'SPECIAL ';
 
           let dmgText = `${movePrefix}${attack.damage}`;
           let dmgColor = '#ffffff';
-          let big = attack.type === 'special' || attack.type === 'punch3' || attack.type === 'kick2';
+          let big = attack.type === 'special' || attack.type === 'punch3' || attack.type === 'kick2' || attack.type === 'dashKick';
 
           if (attack.crit) {
             dmgText = `${movePrefix}CRIT ${attack.damage}`;
@@ -2200,6 +2323,15 @@
           armRZ = -0.78;
           legLX = -0.20;
           legRX = 0.28;
+        } else if (this.state === 'dash') {
+          torsoX = 0.28;
+          torsoY = 0.10;
+          armLX = 0.80;
+          armRX = 0.80;
+          armLZ = 0.40;
+          armRZ = -0.40;
+          legLX = 0.55;
+          legRX = -0.55;
         } else if (this.state === 'attack' && this.attack) {
           const attack = this.attack;
           const activeStart = attack.startup;
@@ -2254,6 +2386,22 @@
             armRX = 0.90 * ext;
             armLZ = 0.65 * ext;
             armRZ = -0.65 * ext;
+          } else if (attack.type === 'dashPunch') {
+            armRX = -1.95 * ext;
+            armRZ = -0.25 * ext;
+            armLX = 0.85 * ext;
+            torsoY = -0.85 * ext;
+            torsoX = 0.18 * ext;
+            legRX = 0.30 * ext;
+          } else if (attack.type === 'dashKick') {
+            legRX = -1.85 * ext;
+            legLX = 0.35 * ext;
+            torsoY = -0.95 * ext;
+            torsoX = 0.28 * ext;
+            armLX = -1.05 * ext;
+            armRX = 1.00 * ext;
+            armLZ = 0.70 * ext;
+            armRZ = -0.70 * ext;
           } else if (attack.type === 'special') {
             armLX = -1.65 * ext;
             armRX = -1.65 * ext;
@@ -2324,7 +2472,7 @@
             targetLight = 2.3;
           } else if (this.inRage) {
             targetLight = 2.0;
-          } else if (this.state === 'walk') {
+          } else if (this.state === 'walk' || this.state === 'dash') {
             targetLight = 1.25;
           }
 
@@ -2357,6 +2505,8 @@
             targetSprite = 0.26;
           } else if (this.inRage) {
             targetSprite = 0.20;
+          } else if (this.state === 'dash') {
+            targetSprite = 0.24;
           }
 
           this.glowSpriteMat.opacity +=
@@ -2444,17 +2594,21 @@
               i.moveY = 0;
             }
           } else {
-            if (r < 0.18) {
+            if (r < 0.16) {
               i.attackType = 'punch';
-            } else if (r < 0.32) {
+            } else if (r < 0.30) {
               i.attackType = 'kick';
-            } else if (r < 0.42) {
+            } else if (r < 0.38) {
               i.attackType = 'punch2';
-            } else if (r < 0.50) {
+            } else if (r < 0.46) {
               i.attackType = 'punch3';
-            } else if (r < 0.58) {
+            } else if (r < 0.52) {
               i.attackType = 'kick2';
-            } else if (r < 0.68) {
+            } else if (r < 0.58) {
+              i.attackType = 'dashPunch';
+            } else if (r < 0.62) {
+              i.attackType = 'dashKick';
+            } else if (r < 0.70) {
               i.block = true;
             } else if (r < 0.84) {
               i.moveY = -1;
@@ -2493,6 +2647,30 @@
             i.attackType = 'kick2';
           } else {
             i.attackType = 'punch3';
+          }
+        }
+
+        if (
+          this.f.canAct &&
+          dist > 2.4 &&
+          this.f.special >= 20 &&
+          Math.random() < dt * 0.25
+        ) {
+          i.block = false;
+          i.moveX = 0;
+          i.moveY = 0;
+          i.special = true;
+        }
+
+        if (this.f.state === 'dash' && dist < 2.3 && Math.random() < dt * 3.0) {
+          i.block = false;
+          i.moveX = 0;
+          i.moveY = 0;
+
+          if (Math.random() < 0.6) {
+            i.punch = true;
+          } else {
+            i.kick = true;
           }
         }
 
@@ -3693,6 +3871,7 @@
 
       if (!attack || !attack.isActive || attack.hasHit) return;
       if (defender.state === 'ko') return;
+      if (defender.state === 'dash') return;
 
       const to = new THREE.Vector3().subVectors(defender.pos, attacker.pos);
       to.y = 0;
@@ -3810,6 +3989,10 @@
         f.comboStep = 0;
         f.comboWindow = 0;
         f.queuedAttack = null;
+
+        f.dashCooldown = 0;
+        f.dashTime = 0;
+        f.dashDir.set(0, 0, 0);
 
         f.state = 'idle';
         f.stateTime = 0;
