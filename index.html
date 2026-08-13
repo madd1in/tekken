@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
-  <title>Iron Fist Arena - Pretty Fighter Beat Edition</title>
+  <title>Iron Fist Arena - Ultra Push Edition</title>
   <style>
     :root {
       --p1: #31b8ff;
@@ -50,6 +50,29 @@
       transition: opacity .25s;
       background:
         radial-gradient(circle at center, rgba(255,0,0,0) 42%, rgba(255,0,0,.42) 100%);
+    }
+
+    #popups {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .dmgPopup {
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform: translate(-50%, -50%);
+      font-weight: 900;
+      font-size: 20px;
+      color: #fff;
+      white-space: nowrap;
+      text-shadow:
+        0 0 10px rgba(0,0,0,.55),
+        0 2px 0 rgba(0,0,0,.35);
+      will-change: transform, opacity;
     }
 
     #ui {
@@ -606,6 +629,7 @@
 <body>
   <div id="flash"></div>
   <div id="vignette"></div>
+  <div id="popups"></div>
 
   <div id="ui">
     <div id="top">
@@ -693,8 +717,7 @@
     <p>Wähle deinen Kämpfer</p>
     <div id="charCards" class="cards"></div>
     <div class="panel">
-      <strong>Fixed</strong>: Treffer werden wieder registriert<br>
-      <strong>Neu</strong>: hübschere Fighter, Planet, Aurora, Floor-Glow, Beat-Polish<br>
+      <strong>Ultra Push</strong>: Damage Numbers, Fever Mode, Perfect Counter, Charakter-Accessoires<br>
       Desktop: WASD • J Schlag • K Tritt • L Blocken • R Special<br>
       Mobile: linker Joystick • große Buttons • Smart Zoom + Touch-Assist
     </div>
@@ -804,6 +827,10 @@
     const beams = [];
     const auroras = [];
 
+    const popups = [];
+    const popupPool = [];
+    const popupVec = new THREE.Vector3();
+
     const keys = {};
     const just = {};
 
@@ -856,6 +883,8 @@
       beatBonusText: 'ON BEAT',
       musicOn: true,
       musicIntensity: 0.15,
+      fever: false,
+      wasFever: false,
       modifier: 'NORMAL',
       gyroEnabled: false,
       camTargetX: 0,
@@ -883,6 +912,7 @@
     const vignetteEl = document.getElementById('vignette');
     const beatDotEl = document.getElementById('beatDot');
     const beatBonusEl = document.getElementById('beatBonus');
+    const popupsEl = document.getElementById('popups');
 
     const btnMusic = document.getElementById('btnMusic');
     const btnGyro = document.getElementById('btnGyro');
@@ -904,6 +934,7 @@
     class Fighter {
       constructor(data, isPlayer, startPosition) {
         this.name = data.name;
+        this.charId = data.id;
         this.isPlayer = isPlayer;
 
         this.pos = startPosition.clone();
@@ -937,6 +968,12 @@
 
         this.buildModel(data.color, data.accent);
         this.root.position.copy(this.pos);
+
+        if (this.charId === 'titan') {
+          this.root.scale.setScalar(1.10);
+        } else if (this.charId === 'viper') {
+          this.root.scale.setScalar(0.94);
+        }
       }
 
       get inRage() {
@@ -958,12 +995,6 @@
           color: 0x15161a,
           roughness: 0.58,
           metalness: 0.28
-        });
-
-        const black = new THREE.MeshStandardMaterial({
-          color: 0x0a0a0d,
-          roughness: 0.65,
-          metalness: 0.2
         });
 
         this.accentMat = new THREE.MeshStandardMaterial({
@@ -1077,6 +1108,67 @@
         this.legR = this.makeFighterLeg(mat, dark, this.accentMat);
         this.legR.position.set(0.23, 0.98, 0);
         this.visual.add(this.legR);
+
+        if (this.charId === 'titan') {
+          const padGeo = new THREE.BoxGeometry(0.30, 0.20, 0.38);
+
+          const padL = new THREE.Mesh(padGeo, this.accentMat);
+          padL.position.set(-0.66, 0.86, 0);
+          this.torso.add(padL);
+
+          const padR = new THREE.Mesh(padGeo, this.accentMat);
+          padR.position.set(0.66, 0.86, 0);
+          this.torso.add(padR);
+
+          const tank = new THREE.Mesh(
+            new THREE.BoxGeometry(0.58, 0.26, 0.18),
+            dark
+          );
+          tank.position.set(0, 0.12, 0.28);
+          this.torso.add(tank);
+        }
+
+        if (this.charId === 'viper') {
+          const fin = new THREE.Mesh(
+            new THREE.BoxGeometry(0.06, 0.45, 0.20),
+            this.accentMat
+          );
+          fin.position.set(0, 0.45, -0.26);
+          fin.rotation.x = -0.35;
+          this.torso.add(fin);
+
+          const bladeL = new THREE.Mesh(
+            new THREE.BoxGeometry(0.05, 0.22, 0.12),
+            this.accentMat
+          );
+          bladeL.position.set(-0.20, 0.08, -0.18);
+          bladeL.rotation.z = 0.45;
+          this.torso.add(bladeL);
+
+          const bladeR = new THREE.Mesh(
+            new THREE.BoxGeometry(0.05, 0.22, 0.12),
+            this.accentMat
+          );
+          bladeR.position.set(0.20, 0.08, -0.18);
+          bladeR.rotation.z = -0.45;
+          this.torso.add(bladeR);
+        }
+
+        if (this.charId === 'blitz') {
+          const antenna = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.015, 0.015, 0.24, 6),
+            this.accentMat
+          );
+          antenna.position.set(0.14, 0.34, 0);
+          head.add(antenna);
+
+          const tip = new THREE.Mesh(
+            new THREE.SphereGeometry(0.03, 8, 6),
+            this.accentMat
+          );
+          tip.position.set(0.14, 0.48, 0);
+          head.add(tip);
+        }
 
         const shadowBlob = new THREE.Mesh(
           new THREE.CircleGeometry(0.55, 24),
@@ -1246,6 +1338,10 @@
 
         damage *= 1 + game.musicIntensity * 0.08;
 
+        if (game.fever) {
+          damage *= 1.06;
+        }
+
         if (this.isPlayer && this.inRage) {
           damage *= 1.15;
         }
@@ -1298,7 +1394,20 @@
 
         if (this.counterTimer > 0) {
           counter = true;
-          damage *= 1.35;
+
+          if (beatInfo.onBeat) {
+            damage *= 1.55;
+
+            if (this.isPlayer) {
+              game.beatBonusTimer = 0.65;
+              game.beatBonusText = 'PERFECT COUNTER';
+            }
+
+            spawnSpark(this.chestPos(), 0x7dffd4, 12);
+          } else {
+            damage *= 1.35;
+          }
+
           this.counterTimer = 0;
           spawnSpark(this.chestPos(), 0x66ccff, 8);
         }
@@ -1377,10 +1486,14 @@
 
         if (this.state !== 'ko') {
           const gainBase = this.isPlayer ? 5.5 : 2.2;
-          const gain =
+          let gain =
             gainBase *
             (1 + game.musicIntensity * 0.9) *
             (this.isPlayer && this.inRage ? 1.5 : 1.0);
+
+          if (game.fever) {
+            gain *= this.isPlayer ? 1.30 : 1.10;
+          }
 
           this.special = Math.min(100, this.special + gain * dt);
         }
@@ -1549,6 +1662,7 @@
             this.counterTimer = 0.72;
             this.addSpecial(this.isPlayer ? 10 : 5);
             spawnRing(this.pos, 0x7dffd4, 1.7);
+            spawnDamageNumber(impact, 'BEAT BLOCK', '#7dffd4', false);
 
             if (this.isPlayer) {
               game.beatBonusTimer = 0.55;
@@ -1556,6 +1670,12 @@
             }
           } else {
             this.counterTimer = 0.45;
+
+            if (chip > 0) {
+              spawnDamageNumber(impact, `-${chip}`, '#66ccff', false);
+            } else {
+              spawnDamageNumber(impact, 'GUARD', '#66ccff', false);
+            }
           }
 
           this.health = Math.max(0, this.health - chip);
@@ -1599,6 +1719,34 @@
           spawnSpark(impact, 0xffaa33, attack.type === 'special' ? 28 : 20);
           playHit(attack.damage / 12);
 
+          let dmgText = `-${attack.damage}`;
+          let dmgColor = '#ffffff';
+          let big = false;
+
+          if (attack.crit) {
+            dmgText = `CRIT ${attack.damage}`;
+            dmgColor = '#ffd700';
+            big = true;
+          }
+
+          if (attack.counter) {
+            dmgText = attack.beatBoost
+              ? `PERFECT COUNTER ${attack.damage}`
+              : `COUNTER ${attack.damage}`;
+            dmgColor = '#7dffd4';
+            big = true;
+          }
+
+          if (attack.type === 'special') {
+            dmgText = `SPECIAL ${attack.damage}`;
+            dmgColor = '#' + attacker.accent.toString(16).padStart(6, '0');
+            big = true;
+          } else if (attack.beatBoost && !attack.counter && !attack.crit) {
+            dmgColor = '#7dffd4';
+          }
+
+          spawnDamageNumber(impact, dmgText, dmgColor, big);
+
           if (attack.crit) {
             spawnSpark(impact, 0xffd700, 18);
             screenFlash('#ffd700', 0.06);
@@ -1640,6 +1788,7 @@
           spawnRing(this.pos, attacker.accent, 6.0);
           screenFlash('#ff3355', 0.13);
 
+          game.hitstop = Math.max(game.hitstop, 0.16);
           game.shake += 1.5;
           game.fovPunch = Math.min(16, game.fovPunch + 10);
 
@@ -2225,6 +2374,7 @@
 
     function createFighters(playerCharId, cpuCharId) {
       clearEffects();
+      clearPopups();
 
       if (p1) scene.remove(p1.root);
       if (p2) scene.remove(p2.root);
@@ -2938,11 +3088,22 @@
         game.musicIntensity = 0.15;
       }
 
+      game.fever = game.musicIntensity > 0.75;
+
+      if (game.fever && !game.wasFever && game.state === 'fighting') {
+        game.beatBonusTimer = Math.max(game.beatBonusTimer, 0.7);
+        game.beatBonusText = 'FEVER!';
+        screenFlash('#ff9a3d', 0.05);
+      }
+
+      game.wasFever = game.fever;
+
       if (renderer) {
         renderer.toneMappingExposure =
           1.14 +
           game.beatPulse * 0.05 +
-          game.barPulse * 0.06;
+          game.barPulse * 0.06 +
+          (game.fever ? 0.03 : 0);
       }
 
       if (game.state === 'select') {
@@ -3014,6 +3175,7 @@
       updateEffects(dt);
       updateCamera(rawDt);
       updateUI();
+      updatePopups(rawDt);
     }
 
     function getBeatInfo() {
@@ -3318,6 +3480,88 @@
       }, 60);
     }
 
+    function spawnDamageNumber(worldPos, text, color, big = false) {
+      if (!popupsEl) return;
+
+      if (popups.length >= 14) {
+        const old = popups.shift();
+        old.el.style.display = 'none';
+        popupPool.push(old.el);
+      }
+
+      let el = popupPool.pop();
+
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'dmgPopup';
+        popupsEl.appendChild(el);
+      }
+
+      el.textContent = text;
+      el.style.color = color;
+      el.style.fontSize = big ? '30px' : '20px';
+      el.style.display = 'block';
+      el.style.opacity = '1';
+
+      popups.push({
+        el,
+        pos: worldPos.clone(),
+        vel: new THREE.Vector3(
+          (Math.random() - 0.5) * 1.4,
+          2.6,
+          (Math.random() - 0.5) * 1.4
+        ),
+        life: 0.8,
+        max: 0.8
+      });
+    }
+
+    function clearPopups() {
+      popups.forEach((p) => {
+        p.el.style.display = 'none';
+        popupPool.push(p.el);
+      });
+
+      popups.length = 0;
+    }
+
+    function updatePopups(dt) {
+      if (!popups.length || !camera || !popupsEl) return;
+
+      for (let i = popups.length - 1; i >= 0; i--) {
+        const p = popups[i];
+
+        p.life -= dt;
+
+        if (p.life <= 0) {
+          p.el.style.display = 'none';
+          popupPool.push(p.el);
+          popups.splice(i, 1);
+          continue;
+        }
+
+        p.pos.addScaledVector(p.vel, dt);
+        p.vel.y -= 4.5 * dt;
+
+        popupVec.copy(p.pos).project(camera);
+
+        if (popupVec.z > 1) {
+          p.el.style.opacity = '0';
+          continue;
+        }
+
+        const x = (popupVec.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (-popupVec.y * 0.5 + 0.5) * window.innerHeight;
+
+        const t = 1 - (p.life / p.max);
+        const s = 1 + t * 0.35;
+
+        p.el.style.opacity = String(clamp01(p.life / p.max));
+        p.el.style.transform =
+          `translate(-50%, -50%) translate(${x}px, ${y}px) scale(${s})`;
+      }
+    }
+
     function updateUI() {
       p1HealthEl.style.transform = `scaleX(${clamp01(p1.health / p1.maxHealth)})`;
       p2HealthEl.style.transform = `scaleX(${clamp01(p2.health / p2.maxHealth)})`;
@@ -3331,7 +3575,9 @@
       timerEl.textContent = Math.ceil(Math.max(0, game.timer));
       timerEl.classList.toggle('danger', game.timer <= 10 && game.state === 'fighting');
 
-      modLabelEl.textContent = game.modifier || 'NORMAL';
+      modLabelEl.textContent = game.fever
+        ? `${game.modifier} • FEVER`
+        : game.modifier;
 
       document.querySelectorAll('#p1rounds span').forEach((el, i) => {
         el.classList.toggle('win', game.wins[0] > i);
@@ -3568,7 +3814,8 @@
         b.material.opacity =
           0.025 +
           game.beatPulse * 0.035 +
-          game.barPulse * 0.03;
+          game.barPulse * 0.03 +
+          (game.fever ? 0.015 : 0);
       });
 
       auroras.forEach((s, index) => {
@@ -3578,7 +3825,8 @@
         s.material.opacity =
           0.05 +
           game.beatPulse * 0.03 +
-          game.barPulse * 0.035;
+          game.barPulse * 0.035 +
+          (game.fever ? 0.02 : 0);
 
         s.scale.setScalar(
           32 +
@@ -3594,7 +3842,7 @@
 
       if (scene.fog) {
         scene.fog.color.setHSL(
-          0.62,
+          game.fever ? 0.08 : 0.62,
           0.55,
           0.025 + game.beatPulse * 0.008 + game.musicIntensity * 0.012
         );
@@ -3602,7 +3850,7 @@
 
       if (floorMat) {
         floorMat.emissive.setHSL(
-          0.58,
+          game.fever ? 0.08 : 0.58,
           0.7,
           game.barPulse * 0.025 + game.beatPulse * 0.008
         );
@@ -3613,7 +3861,8 @@
         floorGlowMat.opacity =
           0.18 +
           game.beatPulse * 0.08 +
-          game.barPulse * 0.10;
+          game.barPulse * 0.10 +
+          (game.fever ? 0.05 : 0);
       }
 
       if (ringMat) {
@@ -3621,7 +3870,8 @@
           0.48 +
           game.beatPulse * 0.32 +
           game.barPulse * 0.25 +
-          Math.sin(game.time * 2.4) * 0.06;
+          Math.sin(game.time * 2.4) * 0.06 +
+          (game.fever ? 0.08 : 0);
       }
 
       if (ringMesh) {
@@ -3644,6 +3894,7 @@
       }
 
       if (centerGlowMat) {
+        centerGlowMat.color.setHex(game.fever ? 0xff9a3d : 0x2288ff);
         centerGlowMat.opacity =
           0.05 +
           game.beatPulse * 0.07 +
