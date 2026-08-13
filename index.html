@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
-  <title>Iron Fist Arena - Ultra Push Whole Code</title>
+  <title>Iron Fist Arena - Final Push Whole Code</title>
   <style>
     :root {
       --p1: #31b8ff;
@@ -469,7 +469,16 @@
 
     .actionBtn.ready {
       border-color: #ffd34d;
-      box-shadow: 0 0 24px rgba(255,211,77,.85);
+      animation: specialPulse 0.9s infinite;
+    }
+
+    @keyframes specialPulse {
+      0%, 100% {
+        box-shadow: 0 0 16px rgba(255,211,77,.4);
+      }
+      50% {
+        box-shadow: 0 0 34px rgba(255,211,77,.95);
+      }
     }
 
     .btnIcon {
@@ -697,7 +706,7 @@
 
     <div id="controls">
       WASD: Bewegen / Sidestep • J: Schlag • K: Tritt • L: Blocken • R: Special<br>
-      Mobile: Smart Zoom + Touch-Assist aktiv • ENTER: Rematch • C: Charakter
+      Neu: Parry, Special Cancel, Winner Bonus, Combo Bonus • ENTER: Rematch • C: Charakter
     </div>
   </div>
 
@@ -755,7 +764,7 @@
     <p>Wähle deinen Kämpfer</p>
     <div id="charCards" class="cards"></div>
     <div class="panel">
-      <strong>Ultra Push</strong>: Perfect Beat, Beat-Lanes, Fever, Wall Bounce, Shooting Stars, Dust, Round Colors<br>
+      <strong>Final Push</strong>: Parry, Special Cancel, Winner Bonus, Combo Bonus, Fever Start, Action Modifier<br>
       Desktop: WASD • J Schlag • K Tritt • L Blocken • R Special<br>
       Mobile: linker Joystick • große Buttons • Smart Zoom + Touch-Assist
     </div>
@@ -934,6 +943,7 @@
       wasFever: false,
       modifier: 'NORMAL',
       roundColor: 0x37d5ff,
+      lastRoundWinner: -1,
       gyroEnabled: false,
       camTargetX: 0,
       camTargetY: 0,
@@ -996,6 +1006,7 @@
         this.special = 0;
         this.counterTimer = 0;
         this.beatCombo = 0;
+        this.blockStartTime = 0;
 
         this.state = 'idle';
         this.stateTime = 0;
@@ -1394,6 +1405,12 @@
           damage *= 1.15;
         }
 
+        if (this.combo >= 8) {
+          damage *= 1.12;
+        } else if (this.combo >= 4) {
+          damage *= 1.08;
+        }
+
         let crit = false;
         let counter = false;
 
@@ -1410,6 +1427,7 @@
           if (beatPerfect) {
             damage *= 1.10;
             spawnRing(this.pos, 0xffffff, 1.2);
+            game.fovPunch = Math.min(14, game.fovPunch + 1.2);
           }
 
           this.beatCombo++;
@@ -1506,7 +1524,15 @@
 
         chip = Math.max(1, Math.round(chip));
 
-        const recovery = base.recovery * (beatBoost ? (beatPerfect ? 0.75 : 0.80) : 1.0);
+        const startup = base.startup * (game.modifier === 'ACTION' ? 0.92 : 1.0);
+
+        let recoveryMul = beatBoost ? (beatPerfect ? 0.75 : 0.80) : 1.0;
+
+        if (game.modifier === 'ACTION') {
+          recoveryMul *= 0.85;
+        }
+
+        const recovery = base.recovery * recoveryMul;
 
         this.attack = {
           type,
@@ -1519,15 +1545,22 @@
           beatNear,
           beatPerfect,
           ...base,
+          startup,
           recovery,
           damage,
           chip,
-          total: base.startup + base.active + recovery
+          total: startup + base.active + recovery
         };
 
         if (type === 'special') {
           this.special = 0;
           spawnRing(this.pos, this.accent, 2.2);
+
+          if (game.fever) {
+            spawnRing(this.pos, this.accent, 3.5);
+            spawnSpark(this.chestPos(), this.accent, 12);
+          }
+
           screenFlash('#ffffff', 0.05);
           playSpecialStart();
         } else {
@@ -1553,6 +1586,8 @@
         }
 
         if (this.state !== 'ko') {
+          const wasSpecial = this.special;
+
           const gainBase = this.isPlayer ? 5.5 : 2.2;
           let gain =
             gainBase *
@@ -1564,6 +1599,10 @@
           }
 
           this.special = Math.min(100, this.special + gain * dt);
+
+          if (this.isPlayer && wasSpecial < 100 && this.special >= 100) {
+            playBeatTick();
+          }
         }
 
         if (this.state !== 'ko') {
@@ -1614,6 +1653,16 @@
             attack.time >= attack.startup &&
             attack.time < attack.startup + attack.active;
 
+          if (
+            attack.time > attack.startup + attack.active &&
+            input.special &&
+            this.special >= 100
+          ) {
+            this.attack = null;
+            this.startAttack('special');
+            return;
+          }
+
           if (attack.time < attack.startup + attack.active) {
             const step =
               attack.type === 'kick' ? 1.8 :
@@ -1639,6 +1688,7 @@
 
         if (this.state === 'block') {
           if (!input.block) {
+            this.blockStartTime = 0;
             this.setState('idle');
           }
           return;
@@ -1646,6 +1696,7 @@
 
         if (input.block) {
           this.setState('block');
+          this.blockStartTime = game.time;
           return;
         }
 
@@ -1675,9 +1726,13 @@
         }
 
         if (move.lengthSq() > 0.001) {
-          const speedMul =
+          let speedMul =
             (game.modifier === 'TURBO' ? 1.12 : 1.0) *
             (1 + game.musicIntensity * 0.06);
+
+          if (this.inRage) {
+            speedMul *= 1.08;
+          }
 
           move.normalize().multiplyScalar(this.speed * speedMul * dt);
           this.tryMove(move);
@@ -1728,6 +1783,48 @@
         const beatInfo = getBeatInfo();
 
         if (blocked) {
+          const parryWindow = game.modifier === 'PARRY MASTER' ? 0.22 : 0.14;
+
+          const isParry =
+            this.state === 'block' &&
+            typeof this.blockStartTime === 'number' &&
+            (game.time - this.blockStartTime) <= parryWindow;
+
+          if (isParry) {
+            const perfectParry = beatInfo.onBeat;
+
+            if (perfectParry) {
+              spawnDamageNumber(impact, 'PERFECT PARRY', '#ffd700', true);
+              spawnRing(this.pos, 0xffd700, 2.8);
+              screenFlash('#ffd700', 0.08);
+              this.addSpecial(35);
+              attacker.hitstun = 0.50;
+            } else {
+              spawnDamageNumber(impact, 'PARRY', '#ffffff', true);
+              spawnRing(this.pos, 0xffffff, 2.4);
+              screenFlash('#ffffff', 0.07);
+              this.addSpecial(25);
+              attacker.hitstun = 0.35;
+            }
+
+            spawnSpark(impact, perfectParry ? 0xffd700 : 0xffffff, 20);
+            playPerfectChime();
+
+            this.counterTimer = perfectParry ? 1.15 : 0.95;
+
+            attacker.attack = null;
+            attacker.setState('hitstun');
+            attacker.pos.addScaledVector(this.forward, perfectParry ? 0.60 : 0.45);
+            attacker.clampArena();
+
+            if (this.isPlayer) {
+              game.beatBonusTimer = 0.75;
+              game.beatBonusText = perfectParry ? 'PERFECT PARRY!' : 'PARRY!';
+            }
+
+            return;
+          }
+
           let chip = attack.chip;
 
           if (beatInfo.near) {
@@ -1822,6 +1919,10 @@
             dmgColor = '#ffffff';
           } else if (attack.beatBoost && !attack.counter && !attack.crit) {
             dmgColor = '#7dffd4';
+          }
+
+          if (!attack.crit && !attack.counter && attack.type !== 'special' && attacker.combo >= 4) {
+            dmgColor = '#ff9a3d';
           }
 
           spawnDamageNumber(impact, dmgText, dmgColor, big);
@@ -3144,6 +3245,9 @@
           spawnRing(new THREE.Vector3(0, 0, 0), 0x67e8ff, 8);
           screenFlash('#67e8ff', 0.035);
 
+          if (p1) p1.addSpecial(4);
+          if (p2) p2.addSpecial(4);
+
           if (p1 && p1.isPlayer) {
             game.beatBonusTimer = Math.max(game.beatBonusTimer, 0.5);
             game.beatBonusText = 'BEAT DROP';
@@ -3180,6 +3284,10 @@
         game.musicIntensity = 0.35;
       } else {
         game.musicIntensity = 0.15;
+      }
+
+      if (game.modifier === 'FEVER START') {
+        game.musicIntensity = Math.max(game.musicIntensity, 0.82);
       }
 
       game.fever = game.musicIntensity > 0.75;
@@ -3439,6 +3547,7 @@
     function startMatch() {
       game.wins = [0, 0];
       game.round = 1;
+      game.lastRoundWinner = -1;
 
       resetRound();
       startIntro();
@@ -3448,6 +3557,9 @@
       const pool = [
         'BEAT POWER',
         'BEAT POWER',
+        'ACTION',
+        'PARRY MASTER',
+        'FEVER START',
         'TURBO',
         'CRIT UP',
         'HEAVY',
@@ -3480,6 +3592,7 @@
         f.special = 0;
         f.counterTimer = 0;
         f.beatCombo = 0;
+        f.blockStartTime = 0;
 
         f.state = 'idle';
         f.stateTime = 0;
@@ -3496,6 +3609,12 @@
         f.pos.set(index === 0 ? -2.2 : 2.2, 0, 0);
         f.sync();
       });
+
+      if (game.lastRoundWinner === 0) {
+        p1.special = 30;
+      } else if (game.lastRoundWinner === 1) {
+        p2.special = 30;
+      }
 
       ai.reset();
 
@@ -3526,9 +3645,11 @@
       game.state = 'intro';
       game.stateTimer = 0;
 
+      const bonusText = game.lastRoundWinner >= 0 ? ' • WINNER BONUS' : '';
+
       showMessage(
         `RUNDE ${game.round}`,
-        `BEST OF 3 • ${game.wins[0]} : ${game.wins[1]} • MODUS: ${game.modifier}`,
+        `BEST OF 3 • ${game.wins[0]} : ${game.wins[1]} • MODUS: ${game.modifier}${bonusText}`,
         1.4
       );
     }
@@ -3555,6 +3676,9 @@
 
       if (winner >= 0) {
         game.wins[winner]++;
+        game.lastRoundWinner = winner;
+      } else {
+        game.lastRoundWinner = -1;
       }
 
       const main = (p1.health <= 0 || p2.health <= 0) ? 'K.O.!' : 'ZEIT!';
@@ -3584,6 +3708,7 @@
 
       game.wins = [0, 0];
       game.round = 1;
+      game.lastRoundWinner = -1;
 
       if (p1 && p2) {
         resetRound();
@@ -4257,7 +4382,7 @@
 
     function playMusicStep(step, time, dur) {
       const bar = Math.floor(step / 16) % 4;
-      const roots = [45, 41, 48, 43]; // A F C G
+      const roots = [45, 41, 48, 43];
       const root = roots[bar];
       const chordTypes = [
         [0, 3, 7],
