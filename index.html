@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
-  <title>Iron Fist Arena - Smart Zoom Beat Edition</title>
+  <title>Iron Fist Arena - Pretty Fighter Beat Edition</title>
   <style>
     :root {
       --p1: #31b8ff;
@@ -693,10 +693,10 @@
     <p>Wähle deinen Kämpfer</p>
     <div id="charCards" class="cards"></div>
     <div class="panel">
-      <strong>Smart Zoom</strong>: Kamera zoomt auf Mobile automatisch raus<br>
-      <strong>Beat-Gameplay</strong>: Angriffe / Blocks auf den Beat geben Boni<br>
+      <strong>Fixed</strong>: Treffer werden wieder registriert<br>
+      <strong>Neu</strong>: hübschere Fighter, Planet, Aurora, Floor-Glow, Beat-Polish<br>
       Desktop: WASD • J Schlag • K Tritt • L Blocken • R Special<br>
-      Mobile: linker Joystick • sehr große rechte Buttons + Touch-Assist
+      Mobile: linker Joystick • große Buttons • Smart Zoom + Touch-Assist
     </div>
   </div>
 
@@ -790,6 +790,8 @@
     let polarMat = null;
     let centerGlowMat = null;
     let floorMat = null;
+    let floorGlowMat = null;
+    let planetHalo = null;
     let dust = null;
     let sunLight = null;
     let noiseBuffer = null;
@@ -800,6 +802,7 @@
     const sparks = [];
     const rings = [];
     const beams = [];
+    const auroras = [];
 
     const keys = {};
     const just = {};
@@ -947,76 +950,131 @@
 
         const mat = new THREE.MeshStandardMaterial({
           color,
-          roughness: 0.48,
-          metalness: 0.24
+          roughness: 0.42,
+          metalness: 0.35
         });
 
         const dark = new THREE.MeshStandardMaterial({
-          color: 0x121212,
-          roughness: 0.68,
-          metalness: 0.15
+          color: 0x15161a,
+          roughness: 0.58,
+          metalness: 0.28
+        });
+
+        const black = new THREE.MeshStandardMaterial({
+          color: 0x0a0a0d,
+          roughness: 0.65,
+          metalness: 0.2
         });
 
         this.accentMat = new THREE.MeshStandardMaterial({
           color: accent,
-          roughness: 0.28,
-          metalness: 0.42,
+          roughness: 0.22,
+          metalness: 0.55,
           emissive: accent,
-          emissiveIntensity: 0.25
+          emissiveIntensity: 0.35
+        });
+
+        const visorMat = new THREE.MeshStandardMaterial({
+          color: 0x050911,
+          roughness: 0.1,
+          metalness: 0.8,
+          emissive: accent,
+          emissiveIntensity: 0.18
         });
 
         this.torso = new THREE.Group();
-        this.torso.position.y = 1.02;
+        this.torso.position.y = 1.03;
         this.visual.add(this.torso);
 
         const chest = new THREE.Mesh(
-          new THREE.BoxGeometry(0.76, 0.86, 0.44),
+          new THREE.CapsuleGeometry(0.34, 0.45, 4, 16),
           mat
         );
-        chest.position.y = 0.38;
+        chest.position.y = 0.35;
+        chest.scale.set(1, 0.92, 0.72);
         this.torso.add(chest);
 
-        const core = new THREE.Mesh(
-          new THREE.BoxGeometry(0.42, 0.42, 0.1),
+        const chestPlate = new THREE.Mesh(
+          new THREE.BoxGeometry(0.52, 0.34, 0.12),
           this.accentMat
         );
-        core.position.set(0, 0.42, 0.24);
+        chestPlate.position.set(0, 0.42, 0.26);
+        this.torso.add(chestPlate);
+
+        const core = new THREE.Mesh(
+          new THREE.SphereGeometry(0.08, 16, 12),
+          this.accentMat
+        );
+        core.position.set(0, 0.42, 0.33);
         this.torso.add(core);
 
+        const abdomen = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.22, 0.24, 4, 12),
+          dark
+        );
+        abdomen.position.y = 0.02;
+        abdomen.scale.set(0.9, 0.9, 0.75);
+        this.torso.add(abdomen);
+
         const belt = new THREE.Mesh(
-          new THREE.BoxGeometry(0.58, 0.18, 0.38),
+          new THREE.TorusGeometry(0.26, 0.045, 10, 24),
           this.accentMat
         );
-        belt.position.y = -0.05;
+        belt.rotation.x = Math.PI / 2;
+        belt.position.y = -0.08;
         this.torso.add(belt);
 
-        const head = new THREE.Mesh(
+        const head = new THREE.Group();
+        head.position.y = 0.96;
+        this.torso.add(head);
+
+        const skull = new THREE.Mesh(
           new THREE.SphereGeometry(0.22, 24, 18),
           mat
         );
-        head.position.y = 1.02;
-        this.torso.add(head);
+        head.add(skull);
 
         const visor = new THREE.Mesh(
-          new THREE.BoxGeometry(0.28, 0.08, 0.06),
+          new THREE.BoxGeometry(0.26, 0.09, 0.08),
+          visorMat
+        );
+        visor.position.set(0, 0.02, 0.18);
+        head.add(visor);
+
+        const crest = new THREE.Mesh(
+          new THREE.BoxGeometry(0.05, 0.16, 0.14),
           this.accentMat
         );
-        visor.position.set(0, 1.03, 0.19);
-        this.torso.add(visor);
+        crest.position.set(0, 0.22, -0.02);
+        head.add(crest);
 
-        this.armL = this.makeLimb(mat, 0.17, 0.78);
-        this.armL.position.set(-0.52, 0.78, 0);
+        const earL = new THREE.Mesh(
+          new THREE.SphereGeometry(0.05, 10, 8),
+          this.accentMat
+        );
+        earL.position.set(-0.21, 0.02, 0);
+        head.add(earL);
+
+        const earR = new THREE.Mesh(
+          new THREE.SphereGeometry(0.05, 10, 8),
+          this.accentMat
+        );
+        earR.position.set(0.21, 0.02, 0);
+        head.add(earR);
+
+        this.armL = this.makeFighterArm(mat, dark, this.accentMat);
+        this.armL.position.set(-0.58, 0.78, 0);
         this.torso.add(this.armL);
 
-        this.armR = this.makeLimb(mat, 0.17, 0.78);
-        this.armR.position.set(0.52, 0.78, 0);
+        this.armR = this.makeFighterArm(mat, dark, this.accentMat);
+        this.armR.position.set(0.58, 0.78, 0);
         this.torso.add(this.armR);
 
-        this.legL = this.makeLimb(dark, 0.24, 0.98);
+        this.legL = this.makeFighterLeg(mat, dark, this.accentMat);
         this.legL.position.set(-0.23, 0.98, 0);
         this.visual.add(this.legL);
 
-        this.legR = this.makeLimb(dark, 0.24, 0.98);
+        this.legR = this.makeFighterLeg(mat, dark, this.accentMat);
         this.legR.position.set(0.23, 0.98, 0);
         this.visual.add(this.legR);
 
@@ -1078,24 +1136,81 @@
         scene.add(this.root);
       }
 
-      makeLimb(material, width, height) {
-        const group = new THREE.Group();
+      makeFighterArm(mat, dark, accentMat) {
+        const g = new THREE.Group();
 
-        const limb = new THREE.Mesh(
-          new THREE.BoxGeometry(width, height, width),
-          material
+        const shoulder = new THREE.Mesh(
+          new THREE.SphereGeometry(0.16, 16, 12),
+          dark
         );
-        limb.position.y = -height / 2;
-        group.add(limb);
+        shoulder.position.y = 0.02;
+        shoulder.scale.set(1, 0.85, 1);
+        g.add(shoulder);
 
-        const end = new THREE.Mesh(
-          new THREE.BoxGeometry(width * 1.35, width * 1.35, width * 1.35),
-          material
+        const upper = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.075, 0.28, 4, 10),
+          mat
         );
-        end.position.y = -height;
-        group.add(end);
+        upper.position.y = -0.20;
+        g.add(upper);
 
-        return group;
+        const elbow = new THREE.Mesh(
+          new THREE.SphereGeometry(0.08, 12, 10),
+          dark
+        );
+        elbow.position.y = -0.38;
+        g.add(elbow);
+
+        const fore = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.07, 0.26, 4, 10),
+          dark
+        );
+        fore.position.y = -0.55;
+        g.add(fore);
+
+        const fist = new THREE.Mesh(
+          new THREE.SphereGeometry(0.10, 14, 12),
+          accentMat
+        );
+        fist.position.y = -0.74;
+        fist.scale.set(1, 0.9, 1.15);
+        g.add(fist);
+
+        return g;
+      }
+
+      makeFighterLeg(mat, dark, accentMat) {
+        const g = new THREE.Group();
+
+        const thigh = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.105, 0.34, 4, 10),
+          mat
+        );
+        thigh.position.y = -0.22;
+        g.add(thigh);
+
+        const knee = new THREE.Mesh(
+          new THREE.SphereGeometry(0.095, 12, 10),
+          dark
+        );
+        knee.position.set(0, -0.44, 0.03);
+        g.add(knee);
+
+        const shin = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.085, 0.34, 4, 10),
+          dark
+        );
+        shin.position.y = -0.62;
+        g.add(shin);
+
+        const boot = new THREE.Mesh(
+          new THREE.BoxGeometry(0.20, 0.14, 0.32),
+          accentMat
+        );
+        boot.position.set(0, -0.88, 0.05);
+        g.add(boot);
+
+        return g;
       }
 
       get canAct() {
@@ -1655,7 +1770,7 @@
           this.attack.type === 'special';
 
         if (this.accentMat) {
-          let targetEmissive = 0.25;
+          let targetEmissive = 0.28 + game.beatPulse * 0.12;
 
           if (isSpecialAttack) {
             targetEmissive = this.attack.isActive ? 2.4 : 0.9;
@@ -1848,13 +1963,13 @@
 
       scene = new THREE.Scene();
       scene.background = makeBackgroundTexture();
-      scene.fog = new THREE.Fog(0x03060c, 16, 60);
+      scene.fog = new THREE.Fog(0x03060c, 16, 70);
 
       camera = new THREE.PerspectiveCamera(
         50,
         window.innerWidth / window.innerHeight,
         0.1,
-        120
+        180
       );
       camera.position.set(0, 4, 12);
 
@@ -1948,6 +2063,14 @@
         b.visible = quality.beams;
       });
 
+      auroras.forEach((a) => {
+        a.visible = quality.level >= 1;
+      });
+
+      if (planetHalo) {
+        planetHalo.visible = quality.level >= 1;
+      }
+
       [p1, p2].forEach((f) => {
         if (!f) return;
 
@@ -1983,39 +2106,116 @@
 
     function makeBackgroundTexture() {
       const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 1024;
+
+      const ctx = canvas.getContext('2d');
+
+      const g = ctx.createLinearGradient(0, 0, 0, 1024);
+      g.addColorStop(0, '#0c1733');
+      g.addColorStop(0.35, '#081026');
+      g.addColorStop(0.72, '#04070f');
+      g.addColorStop(1, '#010204');
+
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 1024, 1024);
+
+      function nebula(x, y, r, color) {
+        const rg = ctx.createRadialGradient(x, y, 0, x, y, r);
+        rg.addColorStop(0, color);
+        rg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = rg;
+        ctx.fillRect(0, 0, 1024, 1024);
+      }
+
+      nebula(180, 220, 280, 'rgba(45,110,255,.22)');
+      nebula(820, 260, 320, 'rgba(255,90,160,.13)');
+      nebula(520, 780, 420, 'rgba(0,220,255,.10)');
+      nebula(880, 840, 260, 'rgba(255,170,70,.08)');
+
+      for (let i = 0; i < 800; i++) {
+        const a = 0.03 + Math.random() * 0.22;
+        const s = Math.random() * 2.2;
+        ctx.fillStyle = `rgba(255,255,255,${a})`;
+        ctx.fillRect(Math.random() * 1024, Math.random() * 700, s, s);
+      }
+
+      for (let i = 0; i < 40; i++) {
+        const x = Math.random() * 1024;
+        const y = Math.random() * 500;
+        const r = 2 + Math.random() * 5;
+        const rg = ctx.createRadialGradient(x, y, 0, x, y, r);
+        rg.addColorStop(0, 'rgba(255,255,255,.55)');
+        rg.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = rg;
+        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      return texture;
+    }
+
+    function makePlanetTexture() {
+      const canvas = document.createElement('canvas');
       canvas.width = 512;
       canvas.height = 512;
 
       const ctx = canvas.getContext('2d');
 
-      const g = ctx.createLinearGradient(0, 0, 0, 512);
-      g.addColorStop(0, '#0b1530');
-      g.addColorStop(0.45, '#071022');
-      g.addColorStop(1, '#02040a');
+      const g = ctx.createLinearGradient(0, 0, 512, 512);
+      g.addColorStop(0, '#4d8dff');
+      g.addColorStop(0.35, '#2244aa');
+      g.addColorStop(0.7, '#101b44');
+      g.addColorStop(1, '#060a18');
 
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, 512, 512);
 
-      function blob(x, y, r, color) {
-        const rg = ctx.createRadialGradient(x, y, 0, x, y, r);
-        rg.addColorStop(0, color);
-        rg.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = rg;
-        ctx.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 28; i++) {
+        const y = Math.random() * 512;
+        const h = 6 + Math.random() * 34;
+        ctx.fillStyle = `rgba(160,220,255,${0.03 + Math.random() * 0.10})`;
+        ctx.fillRect(0, y, 512, h);
       }
 
-      blob(120, 110, 160, 'rgba(40,90,220,.16)');
-      blob(400, 160, 180, 'rgba(255,110,60,.10)');
-      blob(260, 420, 220, 'rgba(0,220,255,.08)');
+      for (let i = 0; i < 80; i++) {
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        const r = 1 + Math.random() * 7;
+        ctx.fillStyle = `rgba(0,0,0,${0.03 + Math.random() * 0.08})`;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
-      for (let i = 0; i < 260; i++) {
-        ctx.fillStyle = `rgba(255,255,255,${0.03 + Math.random() * 0.12})`;
-        ctx.fillRect(
-          Math.random() * 512,
-          Math.random() * 300,
-          Math.random() * 2,
-          Math.random() * 2
-        );
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      return texture;
+    }
+
+    function makeFloorGlowTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+
+      const ctx = canvas.getContext('2d');
+
+      const g = ctx.createRadialGradient(256, 256, 20, 256, 256, 250);
+      g.addColorStop(0, 'rgba(100,200,255,.75)');
+      g.addColorStop(0.35, 'rgba(40,120,255,.28)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 512, 512);
+
+      ctx.strokeStyle = 'rgba(120,220,255,.16)';
+      ctx.lineWidth = 3;
+
+      for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.arc(256, 256, 50 + i * 42, 0, Math.PI * 2);
+        ctx.stroke();
       }
 
       const texture = new THREE.CanvasTexture(canvas);
@@ -2131,6 +2331,24 @@
       floor.receiveShadow = quality.shadows;
       scene.add(floor);
 
+      const floorGlowTex = makeFloorGlowTexture();
+      floorGlowMat = new THREE.MeshBasicMaterial({
+        map: floorGlowTex,
+        transparent: true,
+        opacity: 0.22,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+
+      const floorGlow = new THREE.Mesh(
+        new THREE.CircleGeometry(ARENA_RADIUS + 1.1, 64),
+        floorGlowMat
+      );
+      floorGlow.rotation.x = -Math.PI / 2;
+      floorGlow.position.y = 0.008;
+      scene.add(floorGlow);
+
       const grid = new THREE.GridHelper(ARENA_RADIUS * 2 + 2, 26, 0x2b6ca8, 0x132030);
       grid.position.y = 0.015;
       grid.material.transparent = true;
@@ -2188,6 +2406,55 @@
       centerGlow.rotation.x = -Math.PI / 2;
       centerGlow.position.y = 0.018;
       scene.add(centerGlow);
+
+      const planetTex = makePlanetTexture();
+      const planet = new THREE.Mesh(
+        new THREE.SphereGeometry(14, 32, 24),
+        new THREE.MeshBasicMaterial({
+          map: planetTex,
+          fog: false
+        })
+      );
+      planet.position.set(-34, 20, -52);
+      scene.add(planet);
+
+      planetHalo = new THREE.Mesh(
+        new THREE.RingGeometry(17, 22, 64),
+        new THREE.MeshBasicMaterial({
+          color: 0x67e8ff,
+          transparent: true,
+          opacity: 0.12,
+          side: THREE.DoubleSide,
+          fog: false,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        })
+      );
+      planetHalo.position.copy(planet.position);
+      planetHalo.rotation.set(1.15, 0.35, 0);
+      scene.add(planetHalo);
+
+      if (glowTexture) {
+        const colors = [0x37d5ff, 0xff6ea0, 0x8a7dff];
+
+        colors.forEach((c, i) => {
+          const m = new THREE.SpriteMaterial({
+            map: glowTexture,
+            color: c,
+            transparent: true,
+            opacity: 0.07,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            fog: false
+          });
+
+          const s = new THREE.Sprite(m);
+          s.position.set(-35 + i * 28, 12 + i * 5, -38 - i * 12);
+          s.scale.setScalar(34);
+          auroras.push(s);
+          scene.add(s);
+        });
+      }
 
       for (let i = 0; i < 10; i++) {
         const angle = (i / 10) * Math.PI * 2;
@@ -2821,7 +3088,9 @@
     }
 
     function checkHit(attacker, defender) {
-      if (!attacker.attack || !attacker.attack.isActive || attacker.attack.hasHit) return;
+      const attack = attacker.attack;
+
+      if (!attack || !attack.isActive || attack.hasHit) return;
       if (defender.state === 'ko') return;
 
       const to = new THREE.Vector3().subVectors(defender.pos, attacker.pos);
@@ -2845,7 +3114,7 @@
           defender.state === 'block' ||
           defender.state === 'blockstun';
 
-        defender.takeHit(attacker.attack, attacker, blocked);
+        defender.takeHit(attack, attacker, blocked);
       }
     }
 
@@ -3302,6 +3571,27 @@
           game.barPulse * 0.03;
       });
 
+      auroras.forEach((s, index) => {
+        if (!s.visible) return;
+
+        s.material.rotation += dt * (0.02 + index * 0.01);
+        s.material.opacity =
+          0.05 +
+          game.beatPulse * 0.03 +
+          game.barPulse * 0.035;
+
+        s.scale.setScalar(
+          32 +
+          Math.sin(game.time * 0.2 + index * 1.7) * 3 +
+          game.barPulse * 4
+        );
+      });
+
+      if (planetHalo && planetHalo.visible) {
+        planetHalo.rotation.z += dt * 0.02;
+        planetHalo.material.opacity = 0.10 + game.barPulse * 0.08;
+      }
+
       if (scene.fog) {
         scene.fog.color.setHSL(
           0.62,
@@ -3317,6 +3607,13 @@
           game.barPulse * 0.025 + game.beatPulse * 0.008
         );
         floorMat.emissiveIntensity = 0.16 + game.barPulse * 0.16;
+      }
+
+      if (floorGlowMat) {
+        floorGlowMat.opacity =
+          0.18 +
+          game.beatPulse * 0.08 +
+          game.barPulse * 0.10;
       }
 
       if (ringMat) {
