@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Iron Fist Arena - Full Push</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<title>Iron Fist Arena - Ultra Push</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:Arial,Helvetica,sans-serif;touch-action:none;overscroll-behavior:none}
 canvas{display:block}
-#flash,#vignette{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:3}
+#flash,#vignette,#grade{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:3}
 #vignette{background:radial-gradient(circle at center,rgba(255,0,0,0) 42%,rgba(255,0,0,.42) 100%)}
+#grade{opacity:.22;background:radial-gradient(circle at center,rgba(0,0,0,0) 55%,rgba(0,0,0,.35) 100%)}
 #popups{position:fixed;inset:0;pointer-events:none;z-index:4;overflow:hidden}
 .dmgPopup{position:absolute;left:0;top:0;transform:translate(-50%,-50%);font-weight:900;font-size:20px;color:#fff;white-space:nowrap;text-shadow:0 0 10px rgba(0,0,0,.55),0 2px 0 rgba(0,0,0,.35)}
 #ui{position:fixed;inset:0;pointer-events:none;color:#fff;z-index:5;user-select:none}
@@ -57,16 +58,13 @@ canvas{display:block}
 #overlay{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:auto;overflow:auto;padding:20px;background:radial-gradient(circle at 50% 20%,rgba(30,60,120,.9),rgba(0,0,0,.96));color:#fff}
 #overlay h1{font-size:clamp(36px,9vw,100px);margin:0;letter-spacing:7px}
 #overlay p{font-size:19px;color:#ffd166;letter-spacing:3px}
-.cards{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:18px}
-.card{width:min(44vw,210px);min-width:145px;padding:13px;border:1px solid rgba(255,255,255,.18);border-radius:16px;background:rgba(255,255,255,.06);cursor:pointer}
-.card h2{margin:5px 0;letter-spacing:2px;font-size:20px}
-.card p{margin:0 0 8px;color:#ffd166;font-size:12px}
-.swatch{height:52px;border-radius:10px;margin-bottom:9px}
+.panel{margin-top:18px;padding:14px 18px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);border-radius:14px;line-height:1.7;font-size:14px}
 </style>
 </head>
 <body>
 <div id="flash"></div>
 <div id="vignette"></div>
+<div id="grade"></div>
 <div id="popups"></div>
 
 <div id="ui">
@@ -98,12 +96,10 @@ canvas{display:block}
 </div>
 
 <div id="sys">
-  <button id="btnView" class="sysBtn">👁</button>
+  <button id="btnTrain" class="sysBtn">🧪</button>
   <button id="btnBoss" class="sysBtn">👹</button>
   <button id="btnMode" class="sysBtn">🎮</button>
-  <button id="btnTrain" class="sysBtn">🧪</button>
   <button id="btnMusic" class="sysBtn">🎵</button>
-  <button id="btnChar" class="sysBtn">🎭</button>
   <button id="btnFull" class="sysBtn">⛶</button>
 </div>
 
@@ -119,8 +115,13 @@ canvas{display:block}
 
 <div id="overlay">
   <h1>IRON FIST ARENA</h1>
-  <p>Wähle deinen Kämpfer</p>
-  <div id="charCards" class="cards"></div>
+  <p>Tap to Start</p>
+  <div class="panel">
+    P1: WASD + J/K/L/R<br>
+    P2: Arrows + , . / M<br>
+    Mobile: Joystick + Buttons<br>
+    Training / Boss / 2P oben rechts
+  </div>
 </div>
 
 <script type="module">
@@ -129,6 +130,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 const ARENA_RADIUS=7;
 const UP=new THREE.Vector3(0,1,0);
 const BPM=104;
+const CENTER=new THREE.Vector3(0,0,0);
 
 const ATTACKS={
   punch:{startup:.10,active:.09,recovery:.13,damage:7,chip:1,range:1.9,lateral:.8,hitstun:.28,blockstun:.14,knockback:.35},
@@ -141,12 +143,6 @@ const ATTACKS={
   special:{startup:.28,active:.14,recovery:.34,damage:24,chip:6,range:2.6,lateral:1.05,hitstun:.65,blockstun:.32,knockback:1.15}
 };
 
-const CHARACTERS=[
-  {id:'blitz',name:'BLITZ',color:0x2266ff,accent:0x77ddff,health:105,speed:4.6,dmg:1.0},
-  {id:'titan',name:'TITAN',color:0xff7722,accent:0xffd166,health:135,speed:3.3,dmg:1.28},
-  {id:'viper',name:'VIPER',color:0x22cc66,accent:0xb6ff66,health:88,speed:5.2,dmg:.88}
-];
-
 let scene,camera,renderer,p1,p2,ai;
 let floorMat,ringMat,ringMesh,centerGlowMat,dust;
 const pillarGroups=[];
@@ -158,13 +154,14 @@ const virtualState={block:false};
 const virtualJust={punch:false,kick:false,special:false};
 const camSide=new THREE.Vector3(0,0,1);
 let audioCtx=null,sfxMaster=null,messageTimeout=null,lastTime=performance.now();
+let audioUnlocked=false;
 
 const isTouchDevice=(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches)||'ontouchstart' in window;
 
 const music={playing:false,gain:null,timer:null,step:0,nextTime:0,startTime:0,beatDuration:60/BPM};
 
 const game={
-  state:'select',round:1,wins:[0,0],timer:60,stateTimer:0,time:0,hitstop:0,shake:0,fovPunch:0,
+  state:'menu',round:1,wins:[0,0],timer:60,stateTimer:0,time:0,hitstop:0,shake:0,fovPunch:0,
   beatPulse:0,barPulse:0,lastBarPulse:0,beatBonusTimer:0,beatBonusText:'ON BEAT',
   musicOn:true,musicIntensity:.15,fever:false,wasFever:false,modifier:'NORMAL',
   lastRoundWinner:-1,bossMode:false,twoPlayer:false,training:false,timeScale:1,slowmoTimer:0,lowObstruction:isTouchDevice,
@@ -186,13 +183,10 @@ const beatDotEl=document.getElementById('beatDot');
 const beatBonusEl=document.getElementById('beatBonus');
 const popupsEl=document.getElementById('popups');
 const overlayEl=document.getElementById('overlay');
-const charCardsEl=document.getElementById('charCards');
-const btnView=document.getElementById('btnView');
+const btnTrain=document.getElementById('btnTrain');
 const btnBoss=document.getElementById('btnBoss');
 const btnMode=document.getElementById('btnMode');
-const btnTrain=document.getElementById('btnTrain');
 const btnMusic=document.getElementById('btnMusic');
-const btnChar=document.getElementById('btnChar');
 const btnFull=document.getElementById('btnFull');
 const stickAreaEl=document.getElementById('stickArea');
 const stickKnobEl=document.getElementById('stickKnob');
@@ -282,7 +276,10 @@ class Fighter{
       beatBoost=true;beatPerfect=b.perfect;
       if(beatPerfect)damage*=1.1;
       this.beatCombo++;
-      if(this.isPlayer){game.beatBonusTimer=.75;game.beatBonusText=beatPerfect?'PERFECT BEAT':`ON BEAT x${this.beatCombo}`}
+      if(this.isPlayer){
+        game.beatBonusTimer=.75;
+        game.beatBonusText=this.beatCombo>=3?`BEAT CHAIN x${this.beatCombo}`:(beatPerfect?'PERFECT BEAT':`ON BEAT x${this.beatCombo}`);
+      }
       if(type!=='special')this.addSpecial(this.isPlayer?(beatPerfect?10:7):4);
     }else if(b.near)beatNear=true;else this.beatCombo=0;
     if(this.counterTimer>0){counter=true;damage*=beatBoost?1.55:1.35;this.counterTimer=0}
@@ -364,6 +361,11 @@ class Fighter{
       if(attack.time<attack.startup+attack.active){
         const step=(attack.type==='kick'||attack.type==='kick2')?1.8:(attack.type==='dashKick')?2.8:(attack.type==='special')?2.4:(attack.type==='dashPunch')?2.6:1;
         this.pos.addScaledVector(this.forward,step*dt);this.clampArena();
+        if(Math.random()<dt*18){
+          const p=this.chestPos();
+          p.addScaledVector(this.forward,attack.range*.55);
+          spawnSpark(p,this.accent,2);
+        }
       }
       if(attack.time>=attack.total){
         this.attack=null;
@@ -606,20 +608,24 @@ function init(){
   renderer.setPixelRatio(Math.min(devicePixelRatio,isTouchDevice?1.5:2));
   renderer.outputColorSpace=THREE.SRGBColorSpace;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure=1.2;
+  renderer.toneMappingExposure=1.28;
   document.body.appendChild(renderer.domElement);
 
   buildArena();
-  renderCharCards();
   createFighters('blitz','titan');
   setupSystemButtons();
   setupTouchControls();
   setupMiscListeners();
   updatePillarVisibility();
-  updateBossButton();
-  updateModeButton();
-  updateTrainButton();
+  updateModeButtons();
   updateUI();
+
+  overlayEl.addEventListener('click',()=>{
+    initAudio();
+    unlockAudio();
+    overlayEl.style.display='none';
+    startMatch();
+  });
 }
 
 function makeBackgroundTexture(){
@@ -676,6 +682,8 @@ function buildArena(){
   const key=new THREE.DirectionalLight(0xffffff,1.7);key.position.set(8,14,6);scene.add(key);
   const rim=new THREE.DirectionalLight(0x66aaff,.75);rim.position.set(-8,6,-8);scene.add(rim);
   const warm=new THREE.PointLight(0xff8844,.65,35,2);warm.position.set(0,6,0);scene.add(warm);
+  const blue=new THREE.PointLight(0x37d5ff,.7,30,2);blue.position.set(-6,4,-6);scene.add(blue);
+  const orange=new THREE.PointLight(0xff9a3d,.5,30,2);orange.position.set(6,3,5);scene.add(orange);
 }
 
 function createFighters(a,b){
@@ -685,27 +693,15 @@ function createFighters(a,b){
   p1=new Fighter(pd,true,new THREE.Vector3(-2.2,0,0));
   p2=new Fighter(cd,false,new THREE.Vector3(2.2,0,0));
   applyBossMode();
-  updateModeButton();
+  updateModeButtons();
   ai=new AI(p2,p1);
 }
-function renderCharCards(){
-  charCardsEl.innerHTML='';
-  CHARACTERS.forEach(c=>{
-    const color='#'+c.color.toString(16).padStart(6,'0');
-    const accent='#'+c.accent.toString(16).padStart(6,'0');
-    const card=document.createElement('div');card.className='card';
-    card.innerHTML=`<div class="swatch" style="background:linear-gradient(90deg,${color},${accent})"></div><h2>${c.name}</h2><p>HP ${c.health} • Speed ${c.speed} • Power ${Math.round(c.dmg*100)}</p>`;
-    card.addEventListener('click',()=>startFromOverlay(c.id));
-    charCardsEl.appendChild(card);
-  });
-}
+
 function setupSystemButtons(){
-  btnView.onclick=toggleObstruction;
+  btnTrain.onclick=toggleTraining;
   btnBoss.onclick=toggleBossMode;
   btnMode.onclick=toggleTwoPlayer;
-  btnTrain.onclick=toggleTraining;
   btnMusic.onclick=toggleMusic;
-  btnChar.onclick=()=>showCharSelect();
   btnFull.onclick=toggleFullscreen;
 }
 function setupMiscListeners(){
@@ -720,6 +716,8 @@ function setupMiscListeners(){
     if(!document.fullscreenElement)tryFullscreen();
     if(game.state==='matchEnd')startMatch();
   });
+  addEventListener('pointerdown',unlockAudio,{once:true});
+  addEventListener('keydown',unlockAudio,{once:true});
 }
 function setupTouchControls(){
   let stickId=null,ox=0,oy=0;
@@ -742,14 +740,9 @@ function setupTouchControls(){
   function bindTap(el,action){el.addEventListener('pointerdown',e=>{e.preventDefault();el.setPointerCapture(e.pointerId);virtualJust[action]=true});el.addEventListener('pointerup',e=>e.preventDefault());el.addEventListener('pointercancel',()=>{})}
 }
 
-function toggleObstruction(){game.lowObstruction=!game.lowObstruction;updatePillarVisibility();btnView.classList.toggle('active',game.lowObstruction)}
-function updatePillarVisibility(){pillarGroups.forEach(g=>g.visible=!game.lowObstruction)}
-function toggleBossMode(){game.bossMode=!game.bossMode;applyBossMode();updateBossButton();updateModeButton()}
-function updateBossButton(){btnBoss.classList.toggle('active',game.bossMode)}
-function toggleTwoPlayer(){game.twoPlayer=!game.twoPlayer;updateModeButton()}
 function toggleTraining(){
   game.training=!game.training;
-  updateTrainButton();
+  updateModeButtons();
   if(game.training){
     resetRound();
     game.state='fighting';
@@ -761,10 +754,13 @@ function toggleTraining(){
     resetRound();
     startIntro();
   }
-  updateModeButton();
+  updateModeButtons();
 }
-function updateTrainButton(){if(btnTrain)btnTrain.classList.toggle('active',game.training)}
-function updateModeButton(){
+function toggleBossMode(){game.bossMode=!game.bossMode;applyBossMode();updateModeButtons()}
+function toggleTwoPlayer(){game.twoPlayer=!game.twoPlayer;updateModeButtons()}
+function updateModeButtons(){
+  btnTrain.classList.toggle('active',game.training);
+  btnBoss.classList.toggle('active',game.bossMode);
   btnMode.classList.toggle('active',game.twoPlayer);
   if(p2NameEl){
     if(game.training)p2NameEl.textContent='DUMMY';
@@ -788,17 +784,15 @@ function applyBossMode(){
     p2.speed=p2.baseSpeed;
   }
 }
-function toggleMusic(){initAudio();if(!music.playing){game.musicOn=true;startBGM()}else{game.musicOn=!game.musicOn;if(music.gain)music.gain.gain.value=game.musicOn?.25:0}btnMusic.classList.toggle('active',game.musicOn)}
+function toggleMusic(){
+  initAudio();
+  if(!music.playing){game.musicOn=true;startBGM()}
+  else{game.musicOn=!game.musicOn;if(music.gain)music.gain.gain.value=game.musicOn?0.38:0}
+  btnMusic.classList.toggle('active',game.musicOn&&music.playing);
+}
 async function toggleFullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else tryFullscreen()}catch(e){}}
 function tryFullscreen(){try{const el=document.documentElement;if(document.fullscreenElement||document.webkitFullscreenElement)return;if(el.requestFullscreen){const p=el.requestFullscreen();if(p&&p.catch)p.catch(()=>{})}else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen()}catch(e){}}
 
-function startFromOverlay(id){
-  tryFullscreen();initAudio();startBGM();
-  overlayEl.style.display='none';
-  const cpu=CHARACTERS.filter(c=>c.id!==id)[Math.floor(Math.random()*2)].id;
-  createFighters(id,cpu);
-  startMatch();
-}
 function startMatch(){game.wins=[0,0];game.round=1;game.lastRoundWinner=-1;resetRound();startIntro()}
 function chooseModifier(){const pool=['BEAT POWER','ACTION','TURBO','CRIT UP','HEAVY','NORMAL'];game.modifier=pool[Math.floor(Math.random()*pool.length)]}
 function resetRound(){
@@ -832,7 +826,6 @@ function endRound(){
   const w=winner===0?p1:winner===1?p2:null;
   showMessage(winner===-1?'ZEIT!':'K.O.!',w?`${w.name} GEWINNT DIE RUNDE`:'UNENTSCHIEDEN',2.4);
 }
-function showCharSelect(){overlayEl.style.display='flex';game.state='select'}
 function showMessage(text,sub='',duration=1){
   messageEl.innerHTML=`<div>${text}</div>${sub?`<div class="sub">${sub}</div>`:''}`;
   messageEl.classList.add('show');
@@ -963,7 +956,7 @@ function updateEffects(dt){
   if(floorMat){floorMat.emissiveIntensity=.22+game.beatPulse*.14+game.barPulse*.12+(game.fever?.08:0)}
   if(ringMat){ringMat.opacity=.50+game.beatPulse*.35+game.barPulse*.22+(game.fever?.08:0)}
   if(ringMesh){ringMesh.scale.setScalar(1+game.beatPulse*.025+game.barPulse*.035)}
-  if(centerGlowMat){centerGlowMat.opacity=.06+game.beatPulse*.09+game.barPulse*.09+(game.fever?.06:0)}
+  if(centerGlowMat){centerGlowMat.color.setHex(game.fever?0xff9a3d:0x2288ff);centerGlowMat.opacity=.07+game.beatPulse*.10+game.barPulse*.10+(game.fever?.10:0)}
 }
 
 function fitCameraDistance(sep,aspect,fov){
@@ -1030,9 +1023,19 @@ function initAudio(){
   if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
   if(audioCtx&&!sfxMaster){sfxMaster=audioCtx.createGain();sfxMaster.gain.value=.13;sfxMaster.connect(audioCtx.destination)}
 }
+function unlockAudio(){
+  if(audioUnlocked)return;
+  audioUnlocked=true;
+  initAudio();
+  if(audioCtx&&audioCtx.state==='suspended'){
+    audioCtx.resume().then(()=>{if(game.musicOn&&!music.playing)startBGM()});
+  }else{
+    if(game.musicOn&&!music.playing)startBGM();
+  }
+}
 function startBGM(){
   if(!audioCtx||music.playing)return;
-  music.gain=audioCtx.createGain();music.gain.gain.value=game.musicOn?.25:0;music.gain.connect(audioCtx.destination);
+  music.gain=audioCtx.createGain();music.gain.gain.value=game.musicOn?0.38:0;music.gain.connect(audioCtx.destination);
   music.playing=true;music.step=0;music.startTime=audioCtx.currentTime+.1;music.nextTime=music.startTime;
   music.timer=setInterval(scheduleMusic,80);
   btnMusic.classList.add('active');
@@ -1054,30 +1057,30 @@ function playMusicStep(step,time,dur){
   const chord=bar===0?[0,3,7]:[0,4,7];
   if(step%4===0)playKick(time);
   if(step%16===4||step%16===12)playSnare(time,intensity>.5);
-  if(step%2===0)playHat(time,intensity>.35?.02:.012);
-  if(intensity>.65&&step%4===2)playHat(time,.02);
-  if(step%8===0||step%8===6)playTone(midiToFreq(root-12),time,dur*2.2,'sine',.16,220);
-  if(intensity>.45&&step%8===3)playTone(midiToFreq(root-12),time,dur*1.2,'square',.05,400);
-  if(step%16===0)chord.forEach(off=>playTone(midiToFreq(root+12+off),time,dur*14,'sawtooth',.012,800+intensity*900));
-  if(intensity>.25&&step%2===0){const arp=[0,7,12,15,12,7,3,10];const note=root+12+arp[(step/2)%arp.length];playTone(midiToFreq(note),time,dur*1.2,'triangle',.028,1400+intensity*1800)}
+  if(step%2===0)playHat(time,intensity>.35?.03:.02);
+  if(intensity>.65&&step%4===2)playHat(time,.03);
+  if(step%8===0||step%8===6)playTone(midiToFreq(root-12),time,dur*2.2,'sine',.20,240);
+  if(intensity>.45&&step%8===3)playTone(midiToFreq(root-12),time,dur*1.2,'square',.06,500);
+  if(step%16===0)chord.forEach(off=>playTone(midiToFreq(root+12+off),time,dur*14,'sawtooth',.035,900+intensity*1000));
+  if(intensity>.25&&step%2===0){const arp=[0,7,12,15,12,7,3,10];const note=root+12+arp[(step/2)%arp.length];playTone(midiToFreq(note),time,dur*1.2,'triangle',.05,1600+intensity*2000)}
   if(step===56)playRiser(time);
 }
 function playKick(time){
   if(!audioCtx||!music.gain)return;
   const o=audioCtx.createOscillator();const g=audioCtx.createGain();
-  o.type='sine';o.frequency.setValueAtTime(140,time);o.frequency.exponentialRampToValueAtTime(42,time+.12);
-  g.gain.setValueAtTime(.16,time);g.gain.exponentialRampToValueAtTime(.0001,time+.13);
+  o.type='sine';o.frequency.setValueAtTime(150,time);o.frequency.exponentialRampToValueAtTime(42,time+.12);
+  g.gain.setValueAtTime(.22,time);g.gain.exponentialRampToValueAtTime(.0001,time+.13);
   o.connect(g).connect(music.gain);o.start(time);o.stop(time+.14);
 }
 function playSnare(time,loud){
   if(!audioCtx||!music.gain)return;
   const src=audioCtx.createBufferSource();src.buffer=getNoiseBuffer();
-  const gain=audioCtx.createGain();gain.gain.setValueAtTime(loud?.07:.05,time);gain.gain.exponentialRampToValueAtTime(.0001,time+.09);
+  const gain=audioCtx.createGain();gain.gain.setValueAtTime(loud?.10:.08,time);gain.gain.exponentialRampToValueAtTime(.0001,time+.09);
   const filter=audioCtx.createBiquadFilter();filter.type='bandpass';filter.frequency.value=1800;filter.Q.value=.9;
   src.connect(filter).connect(gain).connect(music.gain);src.start(time);src.stop(time+.1);
   const osc=audioCtx.createOscillator();const og=audioCtx.createGain();
   osc.type='triangle';osc.frequency.setValueAtTime(190,time);osc.frequency.exponentialRampToValueAtTime(120,time+.06);
-  og.gain.setValueAtTime(.03,time);og.gain.exponentialRampToValueAtTime(.0001,time+.07);
+  og.gain.setValueAtTime(.04,time);og.gain.exponentialRampToValueAtTime(.0001,time+.07);
   osc.connect(og).connect(music.gain);osc.start(time);osc.stop(time+.08);
 }
 function playHat(time,gainVal){
@@ -1129,8 +1132,11 @@ function update(dt,rawDt){
   if(music.playing){game.beatPulse=clamp(1-b.dist/.18,0,1);game.barPulse=clamp(1-b.barDist/.25,0,1)}
   else{game.beatPulse=.35+Math.sin(game.time*2.5)*.15;game.barPulse=.2+Math.sin(game.time*.6)*.1}
   if(game.barPulse>.9&&game.lastBarPulse<=.9&&music.playing&&game.state==='fighting'&&!game.training){
-    if(p1)p1.addSpecial(4);if(p2)p2.addSpecial(4);
+    if(p1)p1.addSpecial(4);
+    if(p2)p2.addSpecial(4);
     if(p1&&p1.isPlayer){game.beatBonusTimer=Math.max(game.beatBonusTimer,.5);game.beatBonusText='BEAT DROP'}
+    if(p1.pos.distanceTo(CENTER)<1.6){p1.addSpecial(8);spawnRing(p1.pos,0x7dffd4,1.6)}
+    if(p2.pos.distanceTo(CENTER)<1.6){p2.addSpecial(8);spawnRing(p2.pos,0x7dffd4,1.6)}
   }
   game.lastBarPulse=game.barPulse;
   game.beatBonusTimer=Math.max(0,game.beatBonusTimer-rawDt);
@@ -1145,9 +1151,9 @@ function update(dt,rawDt){
   game.fever=game.musicIntensity>.75;
   if(game.fever&&!game.wasFever&&game.state==='fighting'){game.beatBonusTimer=.7;game.beatBonusText='FEVER!';screenFlash('#ff9a3d',.05)}
   game.wasFever=game.fever;
-  if(renderer)renderer.toneMappingExposure=1.18+game.beatPulse*.05+game.barPulse*.06+(game.fever?.03:0);
+  if(renderer)renderer.toneMappingExposure=1.28+game.beatPulse*.05+game.barPulse*.06+(game.fever?.03:0);
 
-  if(game.state==='select'){p1.update(dt,emptyInput(),p2);p2.update(dt,emptyInput(),p1)}
+  if(game.state==='menu'){p1.update(dt,emptyInput(),p2);p2.update(dt,emptyInput(),p1)}
   else if(game.state==='intro'){
     game.stateTimer+=rawDt;
     p1.update(dt,emptyInput(),p2);p2.update(dt,emptyInput(),p1);
@@ -1174,7 +1180,8 @@ function update(dt,rawDt){
     }
   }else if(game.state==='matchEnd'){
     p1.update(dt,emptyInput(),p2);p2.update(dt,emptyInput(),p1);
-    if(just.KeyC)showCharSelect();else if(just.Enter)startMatch();
+    if(just.KeyC){overlayEl.style.display='flex';game.state='menu'}
+    else if(just.Enter)startMatch();
   }
   p1.sync();p2.sync();p1.animate(dt);p2.animate(dt);
   updateEffects(dt);updateCamera(rawDt);updateUI();
